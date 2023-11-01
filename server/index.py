@@ -120,15 +120,8 @@ async def query_db():
     print("query:", query)
     try:
         res = database.query(query)
-        answer = ""
-        for response in res.response:
-            if answer == "":
-                answer += response
-                continue
-            answer += f". {response}"
-        print("res:", res)
         return jsonify({
-            "answer": answer,
+            "answer": res.response,
             "metadata": res.metadata,
         }), 200
     except Exception as e:
