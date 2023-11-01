@@ -1,31 +1,73 @@
-const projStatusCellIdx = 2;
-const projInfoCellIdx = 3;
-const projDownloadCellIdx = 4;
+const disabledClassName = "disabled";
 
-const hiddenClassName = 'hidden';
-
-export function enableDailyControls(onsubmit) {
+export function setupDailyControls(onsubmit) {
   const form = document.getElementById("initFromRecordings");
-  form.onsubmit = ((ev) => {
-    console.log("SUBMITsTED")
-    ev.preventDefault();
-    const roomName = document.getElementById("roomName");
-    const maxRecordings = document.getElementById("maxRecordings")
-    onsubmit(roomName.value, maxRecordings.value);
-  });
-  const btn = form.getElementsByTagName("button")[0];
-  btn.disabled = false;
+  if (!form.onsubmit) {
+    form.onsubmit = ((ev) => {
+      console.log("SUBMITsTED")
+      ev.preventDefault();
+      const roomName = document.getElementById("roomName");
+      const maxRecordings = document.getElementById("maxRecordings")
+      onsubmit(roomName.value, maxRecordings.value);
+      disableStoreControls();
+    });
+  }
 }
 
-export function enableStoreQuery(onsubmit) {
+export function enableStoreControls() {
+  const pendingUploads = getUploadsEle();
+  const listItems = pendingUploads.getElementsByTagName("li")
+  if (listItems && listItems.length > 0) {
+    enableBtn(getIndexUploadsButton());
+  }
+
+  const idxRecordingsForm = getIndexRecordingsForm()
+  if (!idxRecordingsForm.onsubmit) return;
+  enableBtn(getIndexRecordingsButton());
+}
+
+export function disableStoreControls() {
+    disableIndexUploads()
+    disableBtn(getIndexRecordingsButton())
+}
+
+function disableBtn(btn) {
+  btn.disabled = true;
+  btn.classList.add(disabledClassName)
+}
+
+function enableBtn(btn) {
+  btn.disabled = false;
+  btn.classList.remove(disabledClassName)
+}
+
+export function disableIndexUploads() {
+    disableBtn(getIndexUploadsButton())
+}
+
+export function setupIndexUploads(onclick) {
+  const btn = getIndexUploadsButton()
+  // Only set onclick handler once
+  if (!btn.onclick) {
+    btn.onclick = ((ev) => {
+      ev.preventDefault();
+      disableStoreControls();
+      onclick()
+    });
+  }
+}
+
+export function setupStoreQuery(onsubmit) {
      const form = document.getElementById("queryForm");
      form.onsubmit = (ev) => {
        ev.preventDefault();
        const query = document.getElementById("queryInput");
        onsubmit(query.value);
      }
-     const btn = form.getElementsByTagName("button")[0];
-     btn.disabled = false;
+}
+
+export function enableStoreQuery() {
+  enableBtn(getQueryButton())
 }
 
 export function updateStatus(state, msg) {
@@ -35,143 +77,53 @@ export function updateStatus(state, msg) {
   spanEles[1].innerText = msg
 }
 
-
-/**
- * Add a project to the Uploads table
- * @param id
- * @param name
- */
-
-export function addUploadedProject(id, name) {
-  const uploadsTable = getUploadsTable();
-
-  const row = uploadsTable.insertRow(-1);
-  row.id = id;
-
-  const nameCell = row.insertCell(-1);
-  nameCell.innerText = name;
-
-  const idCell = row.insertCell(-1);
-  idCell.innerText = id;
-
-  const statusCell = row.insertCell(-1);
-  statusCell.append(createSpinner());
-
-  const infoCell = row.insertCell(-1);
-  infoCell.append(createSpinner());
-
-  const dlCell = row.insertCell(-1);
-  dlCell.append(createSpinner());
-
-  uploadsTable.classList.remove(hiddenClassName);
-}
-
-/**
- * Add a recording to the Recordings table
- * @param recordingID
- * @param roomName
- * @param timestamp
- * @param processFunc
- */
-export function addDailyRecording(
-  recordingID,
-  roomName,
-  timestamp,
-  processFunc,
-) {
-  // Do not re-add if recording row already exists
-  const existingRow = getProjectRow(null, recordingID)
-  if (existingRow) return;
-
-  const recordingTable = getRecordingsTable();
-
-  const row = recordingTable.insertRow(-1);
-  row.id = recordingID;
-
-  const timestampCell = row.insertCell(-1);
-  timestampCell.innerText = timestamp;
-
-  const nameCell = row.insertCell(-1);
-  nameCell.innerText = roomName;
-
-  const statusCell = row.insertCell(-1);
-  statusCell.innerText = 'Not started';
-
-  // Empty info cell
-  row.insertCell(-1);
-
-  const controlCell = row.insertCell(-1);
-
-  const processBtn = document.createElement('button');
-  processBtn.classList.add('light-btn');
-  processBtn.innerText = 'Process';
-  processBtn.onclick = () => {
-    processBtn.disabled = true;
-    processFunc(recordingID);
-    controlCell.innerText = '';
-    controlCell.append(createSpinner());
-  };
-  controlCell.append(processBtn);
-
-  recordingTable.classList.remove(hiddenClassName);
-}
-
-/**
- * Update the status of a recording, whether it is in the Uploads or the Recordings table
- * @param id
- * @param status
- * @param info
- * @param isDailyRecording
- */
-export function updateProjectStatus(projectID, status, info, recordingID) {
-  const row = getProjectRow(projectID, recordingID);
-
-  const statusCell = row.cells[projStatusCellIdx];
-  statusCell.innerText = status;
-
-  const infoCell = row.cells[projInfoCellIdx];
-  infoCell.innerText = info;
-}
-
-export function addDownloadLink(projectID, link, recordingID) {
-  const project = getProjectRow(projectID, recordingID);
-  const dlCell = project.cells[projDownloadCellIdx];
-  dlCell.innerText = '';
-  const a = document.createElement('a');
-  a.href = link;
-  a.download = 'true';
-  a.innerText = 'Download Output';
-  dlCell.append(a);
-}
-
-function getUploadsTable() {
-  return document.getElementById('uploads');
-}
-
-function getRecordingsTable() {
-  return document.getElementById('dailyRecordings');
-}
-
-/**
- * Retrieve project row from either Uploads or Recordings table
- * @param id
- * @param isDailyRecording
- * @returns {HTMLTableRowElement}
- */
-function getProjectRow(projectID, recordingID) {
-  let ele;
-  let table;
-  if (recordingID) {
-    ele = document.getElementById(recordingID);
-    table = getRecordingsTable();
-  } else {
-    ele = document.getElementById(projectID);
-    table = getUploadsTable();
+export function updateUploads(uploads) {
+  const uploadsEle= getUploadsEle()
+  if (uploads.length === 0) {
+    uploadsEle.innerText = "No uploads pending indexing";
+    return;
   }
+  uploadsEle.innerText = "";
+  // We could check for existing items and only replace the relevant ones here, but let's
+  // just replace the whole list for simplicity of demonstration.
+  const ul = document.createElement("ul")
+  for (let i = 0; i < uploads.length; i += 1) {
+    const upload = uploads[i];
+    const li = document.createElement("li");
+    li.innerText = upload;
+    ul.append(li)
+  }
+  uploadsEle.append(ul);
+}
 
-  const rowIdx = ele?.rowIndex;
-  if (!rowIdx) return null;
-  return table.rows[rowIdx];
+function getUploadsEle() {
+  return document.getElementById("uploads");
+}
+
+export function setupUploadForm(onsubmit) {
+  const form = document.getElementById('uploadForm');
+  form.onsubmit = (ev) => {
+    ev.preventDefault();
+
+
+    const files = document.getElementById('videoFiles').files;
+    onsubmit(files)
+  };
+}
+
+function getIndexUploadsButton() {
+  return document.getElementById("indexUploads")
+}
+
+function getIndexRecordingsForm() {
+    return document.getElementById("initFromRecordings");
+}
+function getIndexRecordingsButton() {
+  return document.getElementById("indexRecordings")
+}
+
+function getQueryButton() {
+  return document.getElementById("ask")
 }
 
 /**

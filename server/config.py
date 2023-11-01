@@ -6,15 +6,12 @@ import uuid
 INDEX_DIR_ENV = 'INDEX_DIR'
 TRANSCRIPTS_DIR_ENV = 'TRANSCRIPTS_DIR'
 UPLOAD_DIR_ENV = 'UPLOAD_DIR'
-AUDIO_DIR_ENV = 'AUDIO_DIR'
-
 
 def ensure_dirs():
     """Creates required file directories if they do not already exist."""
     ensure_dir(TRANSCRIPTS_DIR_ENV)
     ensure_dir(INDEX_DIR_ENV)
     ensure_dir(UPLOAD_DIR_ENV)
-    ensure_dir(AUDIO_DIR_ENV)
 
 
 def ensure_dir(env_name: str):
@@ -43,8 +40,3 @@ def get_index_dir_path() -> str:
 def get_upload_dir_path() -> str:
     """Returns final output parent directory."""
     return os.path.abspath(os.getenv(UPLOAD_DIR_ENV))
-
-
-def get_audio_dir_path() -> str:
-    """Returns final output parent directory."""
-    return os.path.abspath(os.getenv(AUDIO_DIR_ENV))

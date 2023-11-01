@@ -62,7 +62,7 @@ class DeepgramTranscriber(Transcriber):
     def transcribe_from_file(self, api_key: str, audio_path: str) -> str:
         if audio_path and not os.path.exists(audio_path):
             raise Exception("Audio file could not be found", audio_path)
-        deepgram = DeepgramTranscriber(api_key)
+        deepgram = Deepgram(api_key)
 
         try:
             with open(audio_path, 'rb') as audio_file:

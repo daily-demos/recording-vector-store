@@ -73,9 +73,22 @@
                     <form id="initFromRecordings">
                         <label for="maxRecordings" type="number">Max recordings to fetch</label><input type="text" id="maxRecordings" value="10" />
                         <label for="roomName">Daily room name (optional)</label><input type="text" id="roomName" />
-                        <button type="submit" class="dark-btn" disabled>Update Store</button>
+                        <button type="submit" class="dark-btn" id="indexRecordings" disabled>Update Store</button>
                     </form>
-
+                </div>
+                <div id="uploadControls">
+                    <h3>Manual file upload</h3>
+                    <p>Start by selecting one or more MP4 files below. Each file must be up to 16MB in size.</p>
+                    <form id="uploadForm">
+                        <h4>Upload your MP4 files</h4>
+                        <input type="file" id="videoFiles" class="light-btn" multiple required>
+                        <button type="submit" id="upload" class="teal-btn">Upload</button>
+                    </form>
+                    <div id="pendingIndexing">
+                        <h4>Uploads pending indexing</h4>
+                        <div id="uploads">No uploads pending indexing</div>
+                        <button id="indexUploads" class="teal-btn" disabled>Index Pending Uploads</button>
+                    </div>
                 </div>
             </div>
             <div id="query">
@@ -83,7 +96,7 @@
                 <div id="response"></div>
                 <form id="queryForm">
                     <label for="queryInput">Question:</label><textarea id="queryInput" required></textarea>
-                    <button type="submit" class="dark-btn" disabled>Ask the librarian</button>
+                    <button id="ask" type="submit" class="dark-btn disabled" disabled>Ask me anything</button>
                 </form>
             </div>
         </div>
