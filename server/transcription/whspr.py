@@ -5,8 +5,6 @@ import whisper
 
 from .transcriber import Transcriber
 
-DOWNLOAD_DIR_ENV = "WHISPER_DOWNLOAD_DIR"
-
 
 class Models(Enum):
     """Class of basic Whisper model selection options"""
@@ -17,6 +15,7 @@ class Models(Enum):
 
 
 class WhisperTranscriber(Transcriber):
+    """Class to transcribe an audio file with a locally-downloaded Whisper model"""
 
     def requires_local_audio(self) -> bool:
         return True

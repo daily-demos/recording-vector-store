@@ -11,3 +11,4 @@ pylint~=3.0.1
 quart_cors~=0.7.0
 transformers~=4.34.0
 whisper~=1.1.10
+requests~=2.31.0

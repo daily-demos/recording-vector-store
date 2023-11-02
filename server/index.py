@@ -5,41 +5,45 @@ import sys
 import traceback
 
 from quart_cors import cors
-
-import quart
+from quart import Quart, request, jsonify, Response
 
 from config import ensure_dirs
-
-from quart import Quart, request, jsonify
-
 from media import save_uploaded_file, get_uploaded_file_paths
-from store import Store, Sources, State
+from store import Store, Source, State
 from daily import is_daily_supported
 
 app = Quart(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 1000000 * 600
+
+# Allow uploads of up to 60MB by default.
+app.config['MAX_CONTENT_LENGTH'] = 1000000 * 60
+
+# Note that this is not a secure CORS configuration for production.
 cors(app, allow_origin="*", allow_headers=["content-type"])
 ensure_dirs()
 
-database = Store("all-hands", 13)
+store = Store(max_videos=10)
 
 
 @app.before_serving
 async def init():
-    print("BEFORE SERVING")
-    app.add_background_task(database.load_index)
+    # Start loading the index right away, in case one exists.
+    app.add_background_task(store.load_index)
 
 
 @app.after_serving
 async def shutdown():
-    print("AFTER SERVING")
     for task in app.background_tasks:
         task.cancel()
 
 
+#############################
+# Server state-related routes
+#############################
+
 @app.route('/status/capabilities', methods=['GET'])
 def get_capabilities():
-    print("Retrieving capabilities of vector store")
+    """Returns server capabilities, such as whether a Daily API key
+    has been configured or not."""
     daily_supported = is_daily_supported()
     return jsonify({
         "daily": daily_supported
@@ -47,12 +51,15 @@ def get_capabilities():
 
 
 @app.route('/status/db', methods=['GET'])
-def get_db_status():
-    return jsonify(database.status), 200
+def get_store_status():
+    """Returns store status"""
+    return jsonify(store.status), 200
 
 
 @app.route('/status/uploads', methods=['GET'])
 def get_uploaded_files():
+    """Returns the file names of all files which are currently
+    uploaded and pending indexing"""
     try:
         file_paths = get_uploaded_file_paths()
         file_names = []
@@ -66,35 +73,62 @@ def get_uploaded_files():
         process_error("Failed to retrieve uploaded file paths", 500, e)
 
 
+#########################
+# Database-related routes
+#########################
 @app.route('/db/index', methods=['POST'])
 async def init_or_update_store():
+    """Initializes a new vector store or update the existing store"""
     print("Initializing or updating vector store")
-    if database.status.state in [State.LOADING, State.CREATING, State.UPDATING]:
+
+    # Only proceed if a store-update operation is not already taking place
+    if store.status.state in [State.LOADING, State.CREATING, State.UPDATING]:
         process_error('Vector store not ready for further updates', 400)
     raw = await request.get_data()
     data = json.loads(raw or 'null')
     if data is None:
         return process_error(f"Must provide at least the 'source' property in request body", 400)
 
-    index_source = None
+    # Check if user is updating index from Daily recordings or manual uploads
     source = data["source"]
     if source == "daily":
-        index_source = Sources.DAILY
+        index_source = Source.DAILY
         room_name = data["room_name"]
         if room_name:
-            database.daily_room_name = room_name
+            store.daily_room_name = room_name
         max_recordings = data["max_recordings"]
         if max_recordings:
-            database.max_videos = int(max_recordings)
+            store.max_videos = int(max_recordings)
     elif source == "uploads":
-        index_source = Sources.UPLOADS
+        index_source = Source.UPLOADS
     else:
         return process_error(f"Unrecognized source: {source}. Source must be 'daily' or 'uploads'", 400)
+
+    # Start updating the store
+    app.add_background_task(store.initialize_or_update, index_source)
+    return '', 200
+
+
+@app.route('/db/query', methods=['POST'])
+async def query_index():
+    """Queries the loaded index"""
+    if not store.ready():
+        return process_error("Vector index is not yet ready; try again later", 423)
+    data = await request.get_json()
+    query = data["query"]
     try:
-        app.add_background_task(database.initialize_or_update, index_source)
-        return '', 200
+        res = store.query(query)
+        return jsonify({
+            "answer": res.response,
+            "metadata": res.metadata,
+        }), 200
     except Exception as e:
-        return process_error('Failed to initialize database', 500, e)
+        return process_error('failed to query index', 500, e)
+
+
+######################
+# Manual upload routes
+######################
 
 @app.route('/upload', methods=['POST'])
 async def upload_file():
@@ -109,32 +143,14 @@ async def upload_file():
     return "{}", 200
 
 
-@app.route('/db/query', methods=['POST'])
-async def query_db():
-    if not database.ready():
-        return process_error("Vector index is not yet ready; try again later", 423)
-    data = await request.get_json()
-    print("raw:", data)
-
-    query = data["query"]
-    print("query:", query)
-    try:
-        res = database.query(query)
-        return jsonify({
-            "answer": res.response,
-            "metadata": res.metadata,
-        }), 200
-    except Exception as e:
-        return process_error('failed to query index', 500, e)
-
-
-def process_error(msg: str, code=500, error: Exception = None, ) -> tuple[quart.Response, int]:
+def process_error(msg: str, code=500, error: Exception = None, ) -> tuple[Response, int]:
     """Prints provided error and returns appropriately-formatted response."""
     if error:
         traceback.print_exc()
         print(msg, error, file=sys.stderr)
     response = {'error': msg}
     return jsonify(response), code
+
 
 app.run()
 
