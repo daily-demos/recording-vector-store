@@ -1,19 +1,19 @@
-const disabledClassName = "disabled";
+const disabledClassName = 'disabled';
 
 /**
  * Configures the handler for the Daily recording indexing form.
  * @param onsubmit
  */
 export function setupDailyControls(onsubmit) {
-  const form = document.getElementById("initFromRecordings");
+  const form = document.getElementById('initFromRecordings');
   if (!form.onsubmit) {
-    form.onsubmit = ((ev) => {
+    form.onsubmit = (ev) => {
       ev.preventDefault();
-      const roomName = document.getElementById("roomName");
-      const maxRecordings = document.getElementById("maxRecordings")
+      const roomName = document.getElementById('roomName');
+      const maxRecordings = document.getElementById('maxRecordings');
       onsubmit(roomName.value, maxRecordings.value);
       disableStoreControls();
-    });
+    };
   }
 }
 
@@ -22,14 +22,14 @@ export function setupDailyControls(onsubmit) {
  * @param onclick
  */
 export function setupIndexUploads(onclick) {
-  const btn = getIndexUploadsButton()
+  const btn = getIndexUploadsButton();
   // Only set onclick handler once
   if (!btn.onclick) {
-    btn.onclick = ((ev) => {
+    btn.onclick = (ev) => {
       ev.preventDefault();
       disableStoreControls();
-      onclick()
-    });
+      onclick();
+    };
   }
 }
 
@@ -38,12 +38,12 @@ export function setupIndexUploads(onclick) {
  * @param onsubmit
  */
 export function setupStoreQuery(onsubmit) {
-     const form = document.getElementById("queryForm");
-     form.onsubmit = (ev) => {
-       ev.preventDefault();
-       const query = document.getElementById("queryInput");
-       onsubmit(query.value);
-     }
+  const form = document.getElementById('queryForm');
+  form.onsubmit = (ev) => {
+    ev.preventDefault();
+    const query = document.getElementById('queryInput');
+    onsubmit(query.value);
+  };
 }
 
 /**
@@ -55,13 +55,13 @@ export function setupUploadForm(onsubmit) {
   form.onsubmit = (ev) => {
     ev.preventDefault();
 
-    const files = document.getElementById('videoFiles').files;
-    onsubmit(files)
+    const { files } = document.getElementById('videoFiles');
+    onsubmit(files);
   };
 }
 
 export function updateUploadError(errMsg) {
-  const ele = document.getElementById("uploadError");
+  const ele = document.getElementById('uploadError');
   ele.innerText = errMsg;
 }
 
@@ -71,14 +71,14 @@ export function updateUploadError(errMsg) {
 export function enableStoreControls() {
   const pendingUploads = getUploadsEle();
   // Only enable the upload-indexing button if there are uploaded files to index.
-  const listItems = pendingUploads.getElementsByTagName("li")
+  const listItems = pendingUploads.getElementsByTagName('li');
   if (listItems && listItems.length > 0) {
     enableIndexUploads();
   }
 
   // Only enable the Daily-recording-indexing button if it's been configured.
   // If no submission handler exists, the server doesn't have Daily capability enabled.
-  const idxRecordingsForm = getIndexRecordingsForm()
+  const idxRecordingsForm = getIndexRecordingsForm();
   if (!idxRecordingsForm.onsubmit) return;
   enableBtn(getIndexRecordingsButton());
 }
@@ -87,8 +87,8 @@ export function enableStoreControls() {
  * Disables store-related controls (i.e., triggering indexing)
  */
 export function disableStoreControls() {
-    disableIndexUploads()
-    disableBtn(getIndexRecordingsButton())
+  disableIndexUploads();
+  disableBtn(getIndexRecordingsButton());
 }
 
 /**
@@ -96,7 +96,7 @@ export function disableStoreControls() {
  * (in its own function as it also needs to be called externally)
  */
 export function disableIndexUploads() {
-    disableBtn(getIndexUploadsButton())
+  disableBtn(getIndexUploadsButton());
 }
 
 /**
@@ -112,18 +112,18 @@ export function enableIndexUploads() {
  */
 export function enableStoreQuery() {
   const btn = getQueryButton();
-  const spinners = btn.getElementsByClassName("spinner");
+  const spinners = btn.getElementsByClassName('spinner');
   if (spinners && spinners[0]) {
     spinners[0].remove();
   }
-  btn.append(createSpinner())
-  enableBtn(getQueryButton())
+  btn.append(createSpinner());
+  enableBtn(getQueryButton());
 }
 
 export function disableStoreQuery(withSpinner) {
   const btn = getQueryButton();
   if (withSpinner) {
-      btn.append(createSpinner())
+    btn.append(createSpinner());
   }
   disableBtn(getQueryButton());
 }
@@ -133,8 +133,8 @@ export function disableStoreQuery(withSpinner) {
  * @param response
  */
 export function updateResponse(response) {
-  const resEle = document.getElementById("response")
-  resEle.innerText = response
+  const resEle = document.getElementById('response');
+  resEle.innerText = response;
 }
 
 /**
@@ -143,7 +143,7 @@ export function updateResponse(response) {
  */
 function disableBtn(btn) {
   btn.disabled = true;
-  btn.classList.add(disabledClassName)
+  btn.classList.add(disabledClassName);
 }
 
 /**
@@ -152,7 +152,7 @@ function disableBtn(btn) {
  */
 function enableBtn(btn) {
   btn.disabled = false;
-  btn.classList.remove(disabledClassName)
+  btn.classList.remove(disabledClassName);
 }
 
 /**
@@ -162,18 +162,18 @@ function enableBtn(btn) {
  * @param isSpinning
  */
 export function updateStatus(state, msg, isSpinning) {
-  const statusEle = document.getElementById("status");
-  const spanEles = statusEle.getElementsByTagName("span")
+  const statusEle = document.getElementById('status');
+  const spanEles = statusEle.getElementsByTagName('span');
 
-  const statusName = spanEles[0]
+  const statusName = spanEles[0];
   if (!statusName.innerText.includes(state)) {
-    statusName.innerText = "";
+    statusName.innerText = '';
     if (isSpinning) {
-    statusName.append(createSpinner())
+      statusName.append(createSpinner());
+    }
+    statusName.append(state);
   }
-  statusName.append(state)
-  }
-  spanEles[1].innerText = msg
+  spanEles[1].innerText = msg;
 }
 
 /**
@@ -181,41 +181,41 @@ export function updateStatus(state, msg, isSpinning) {
  * @param uploads
  */
 export function updateUploads(uploads) {
-  const uploadsEle= getUploadsEle()
+  const uploadsEle = getUploadsEle();
   if (uploads.length === 0) {
-    uploadsEle.innerText = "No uploads pending indexing";
+    uploadsEle.innerText = 'No uploads pending indexing';
     return;
   }
-  uploadsEle.innerText = "";
+  uploadsEle.innerText = '';
   // We could check for existing items and only replace the relevant ones here, but let's
   // just replace the whole list for simplicity of demonstration.
-  const ul = document.createElement("ul")
+  const ul = document.createElement('ul');
   for (let i = 0; i < uploads.length; i += 1) {
     const upload = uploads[i];
-    const li = document.createElement("li");
+    const li = document.createElement('li');
     li.innerText = upload;
-    ul.append(li)
+    ul.append(li);
   }
   uploadsEle.append(ul);
 }
 
 function getUploadsEle() {
-  return document.getElementById("uploads");
+  return document.getElementById('uploads');
 }
 
 function getIndexUploadsButton() {
-  return document.getElementById("indexUploads")
+  return document.getElementById('indexUploads');
 }
 
 function getIndexRecordingsForm() {
-    return document.getElementById("initFromRecordings");
+  return document.getElementById('initFromRecordings');
 }
 function getIndexRecordingsButton() {
-  return document.getElementById("indexRecordings")
+  return document.getElementById('indexRecordings');
 }
 
 function getQueryButton() {
-  return document.getElementById("ask")
+  return document.getElementById('ask');
 }
 
 /**
