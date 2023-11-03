@@ -31,9 +31,8 @@ def get_uploaded_file_paths() -> List[str]:
         try:
             if not path.is_file() or path.suffix != ".mp4":
                 continue
-            file = open(path, "r+")
-            file_names.append(str(file.name))
-            file.close()
+            with open(path, "r+") as file:
+                file_names.append(str(file.name))
             break
         except IOError as e:
             print("File is already open, likely still being written.", e)

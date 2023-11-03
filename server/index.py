@@ -26,12 +26,14 @@ store = Store(max_videos=10)
 
 @app.before_serving
 async def init():
+    """Initialize the index before serving"""
     # Start loading the index right away, in case one exists.
     app.add_background_task(store.load_index)
 
 
 @app.after_serving
 async def shutdown():
+    """Stop all background tasks"""
     for task in app.background_tasks:
         task.cancel()
 
@@ -70,7 +72,7 @@ def get_uploaded_files():
             "files": file_names
         }), 200
     except Exception as e:
-        process_error("Failed to retrieve uploaded file paths", 500, e)
+        return process_error("Failed to retrieve uploaded file paths", 500, e)
 
 
 #########################
@@ -83,12 +85,12 @@ async def init_or_update_store():
 
     # Only proceed if a store-update operation is not already taking place
     if store.status.state in [State.LOADING, State.CREATING, State.UPDATING]:
-        process_error('Vector store not ready for further updates', 400)
+        return process_error('Vector store not ready for further updates', 400)
     raw = await request.get_data()
     data = json.loads(raw or 'null')
     if data is None:
         return process_error(
-            f"Must provide at least the 'source' property in request body", 400)
+            "Must provide at least the 'source' property in request body", 400)
 
     # Check if user is updating index from Daily recordings or manual uploads
     source = data["source"]

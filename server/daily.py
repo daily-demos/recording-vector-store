@@ -13,16 +13,19 @@ DAILY_API_KEY_ENV = "DAILY_API_KEY"
 
 @dataclasses.dataclass
 class Recording:
+    """Class that represents a single Daily recording"""
     id: str
     room_name: str
     timestamp: datetime.datetime
 
 
 def is_daily_supported() -> bool:
+    """Whether or not Daily is supported on this server"""
     return bool(os.getenv(DAILY_API_KEY_ENV))
 
 
 def get_daily_api_url():
+    """Returns Daily API URL"""
     env_url = os.getenv(DAILY_API_URL_ENV)
     if env_url:
         return env_url

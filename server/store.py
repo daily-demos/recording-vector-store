@@ -19,8 +19,9 @@ from llama_index.vector_stores import ChromaVectorStore
 
 from config import get_transcripts_dir_path, get_index_dir_path
 from daily import fetch_recordings, get_access_link, Recording
-from media import produce_local_audio_from_url, get_audio_path, extract_audio, get_uploaded_file_paths, \
-    get_remote_recording_audio_path
+from media import (produce_local_audio_from_url, get_audio_path,
+                   extract_audio, get_uploaded_file_paths, \
+                   get_remote_recording_audio_path)
 from transcription.dg import DeepgramTranscriber
 from transcription.whspr import WhisperTranscriber
 from transcription.transcriber import Transcriber
@@ -37,12 +38,14 @@ class State(str, Enum):
 
 
 class Source(Enum):
+    """Class representing sources of the videos to index"""
     DAILY = "daily"
     UPLOADS = "uploads"
 
 
 @dataclasses.dataclass
 class Status:
+    """Class representing current index status"""
     state: str
     message: str
 
@@ -135,7 +138,7 @@ class Store:
             print(
                 f"failed to update index from source {source} - {e}",
                 file=sys.stderr)
-            self.update_status(State.ERROR, f"Failed to update existing index")
+            self.update_status(State.ERROR, "Failed to update existing index")
 
     async def generate_index(self, source: Source):
         """Generates a new index from given source"""
@@ -192,7 +195,8 @@ class Store:
         # Wait for tasks to complete
         await asyncio.gather(*tasks)
 
-    async def index_daily_recording(self, sem: asyncio.locks.BoundedSemaphore, recording: Recording):
+    async def index_daily_recording(self, sem: asyncio.locks.BoundedSemaphore,
+                                    recording: Recording):
         """Indexes given Daily recording"""
         async with sem:
             loop = asyncio.get_event_loop()
@@ -276,7 +280,8 @@ class Store:
             if "413" in s:
                 # The payload was too large - log and skip
                 print(
-                    f"Recording {recording_url} was too large; if yo want to index it, download the recording and "
+                    f"Recording {recording_url} was too large; if you want to index it, "
+                    f"download the recording and "
                     f"upload in multiple parts")
 
         self.save_and_index_transcript(transcript_file_path, transcript)
