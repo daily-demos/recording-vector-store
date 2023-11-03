@@ -85,13 +85,16 @@ class Store:
             vector_store = self.get_vector_store()
             storage_context = StorageContext.from_defaults(
                 vector_store=vector_store,
-                docstore=SimpleDocumentStore.from_persist_dir(persist_dir=save_dir),
-                index_store=SimpleIndexStore.from_persist_dir(persist_dir=save_dir),
+                docstore=SimpleDocumentStore.from_persist_dir(
+                    persist_dir=save_dir),
+                index_store=SimpleIndexStore.from_persist_dir(
+                    persist_dir=save_dir),
             )
             index = load_index_from_storage(storage_context)
             if index is not None:
                 self.index = index
-                self.update_status(State.READY, "Index loaded and ready to query")
+                self.update_status(
+                    State.READY, "Index loaded and ready to query")
                 return True
         except FileNotFoundError:
             print("Existing index not found. Store will not be loaded.")
@@ -124,7 +127,8 @@ class Store:
                 await self.generate_upload_transcripts()
             self.update_status(State.READY, "Index ready to query")
         except Exception as e:
-            print(f"failed to update index from source {source} - {e}", file=sys.stderr)
+            print(
+                f"failed to update index from source {source} - {e}", file=sys.stderr)
             self.update_status(State.ERROR, f"Failed to update existing index")
 
     async def generate_index(self, source: Source):
@@ -145,7 +149,8 @@ class Store:
         for path in uploaded_file_paths:
             if not path.endswith(".mp4") and not path.endswith(".mov"):
                 continue
-            tasks.append(asyncio.create_task(self.index_uploaded_file(sem, path)))
+            tasks.append(asyncio.create_task(
+                self.index_uploaded_file(sem, path)))
         # Wait for all processing tasks to finish
         await asyncio.gather(*tasks)
 
@@ -160,7 +165,8 @@ class Store:
         ).load_data()
 
         vector_store = self.get_vector_store()
-        storage_context = StorageContext.from_defaults(vector_store=vector_store)
+        storage_context = StorageContext.from_defaults(
+            vector_store=vector_store)
         index = VectorStoreIndex.from_documents(
             documents, storage_context=storage_context
         )
@@ -175,7 +181,8 @@ class Store:
         sem = asyncio.BoundedSemaphore(5)
         tasks = []
         for recording in recordings:
-            tasks.append(asyncio.create_task(self.index_daily_recording(sem, recording)))
+            tasks.append(asyncio.create_task(
+                self.index_daily_recording(sem, recording)))
         # Wait for tasks to complete
         await asyncio.gather(*tasks)
 
@@ -198,7 +205,8 @@ class Store:
         # Set up transcript file names and paths
         transcript_file_name = f"{file_name}.txt"
         transcripts_dir = get_transcripts_dir_path()
-        transcript_file_path = os.path.join(transcripts_dir, transcript_file_name)
+        transcript_file_path = os.path.join(
+            transcripts_dir, transcript_file_name)
 
         # Don't re-transcribe if a transcript for this recording already exists
         if os.path.exists(transcript_file_path):
@@ -237,7 +245,8 @@ class Store:
         # Set up transcript file names and paths
         transcript_file_name = f"{file_name}.txt"
         transcripts_dir = get_transcripts_dir_path()
-        transcript_file_path = os.path.join(transcripts_dir, transcript_file_name)
+        transcript_file_path = os.path.join(
+            transcripts_dir, transcript_file_name)
 
         # Don't re-transcribe if a transcript for this recording already exists
         if os.path.exists(transcript_file_path):
@@ -251,7 +260,8 @@ class Store:
         if self.transcriber.requires_local_audio():
             audio_path = get_remote_recording_audio_path(file_name)
             if not os.path.exists(audio_path):
-                audio_path = produce_local_audio_from_url(recording_url, file_name)
+                audio_path = produce_local_audio_from_url(
+                    recording_url, file_name)
 
         try:
             transcript = self.transcriber.transcribe(recording_url, audio_path)
@@ -284,9 +294,11 @@ class Store:
     def get_vector_store(self):
         """Returns vector store with desired Chroma client, collection, and embed model"""
         chroma_client = chromadb.PersistentClient(path=get_index_dir_path())
-        chroma_collection = chroma_client.get_or_create_collection(self.collection_name)
+        chroma_collection = chroma_client.get_or_create_collection(
+            self.collection_name)
         embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-base-en-v1.5")
-        vector_store = ChromaVectorStore(chroma_collection=chroma_collection, embed_model=embed_model)
+        vector_store = ChromaVectorStore(
+            chroma_collection=chroma_collection, embed_model=embed_model)
         return vector_store
 
     def ready(self) -> bool:
