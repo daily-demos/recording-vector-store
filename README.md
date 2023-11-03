@@ -30,16 +30,23 @@ In the virtual environment, run the following:
 1. Run `quart --app server/index.py --debug run` in your terminal.
 1. Run `python -m http.server --directory client` in another terminal window.
 
-Now, open the localhost address shown in your terminal after the last step above. You should see the front-end of the demo allowing you to upload your MP4 files or populate the index by fetching your Daily recordings.
+Now, open the localhost address shown in your terminal after the last step above. You should see the front-end
+of the demo allowing you to upload your MP4 files or populate the index by fetching your Daily recordings.
 
 ## How it works
 
 The demo consists of a small JavaScript client and a Python server.
 
-The user can create a new vector database or update one that already exists from Daily cloud recordings or manually-uploaded MP4 files.
+The user can create a new vector database or update one that already exists from Daily cloud recordings
+or manually-uploaded MP4 files.
+
+Note that Daily's REST API, which is used to index from recordings, fetches 100 recordings at a time. For simplicity,
+this demo does not implement recording fetching pagination, so the index will be updated with up to 100 of the newest
+recordings for the domain (or for the specific room, if specified). 
 
 The user can then query their database. After initial update, queries and updates can run at the same time.
 
+![Screenshot of the application UI, with a column for vector store operations and another column for querying the store](screenshot.png)
 
 ## Transcribers 
 
