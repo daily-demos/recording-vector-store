@@ -2,6 +2,7 @@
 returning existing uploads,etc."""
 import os
 import pathlib
+import time
 from pathlib import Path
 from typing import List
 
@@ -28,14 +29,17 @@ def get_uploaded_file_paths() -> List[str]:
     """Returns paths of all mp4 files in the uploads directory"""
     file_names = []
     for path in pathlib.Path(get_upload_dir_path()).iterdir():
-        try:
-            if not path.is_file() or path.suffix != ".mp4":
-                continue
-            with open(path, "r+") as file:
-                file_names.append(str(file.name))
-            break
-        except IOError as e:
-            print("File is already open, likely still being written.", e)
+        if not path.is_file() or path.suffix != ".mp4":
+            continue
+
+        old_file_size = os.path.getsize(path)
+        time.sleep(2)
+        new_file_size = os.path.getsize(path)
+        if old_file_size == new_file_size:
+            file_names.append(str(path))
+        else:
+            print(f"File {path.name} is still being written", old_file_size, new_file_size)
+
     return file_names
 
 
