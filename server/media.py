@@ -57,7 +57,6 @@ def download_recording(recording_url: str, video_file_name: str):
     """Downloads Daily recording"""
     local_file_path = get_recording_video_path(video_file_name)
 
-    # Download recording to UPLOAD dir
     try:
         with open(local_file_path, 'wb') as f:
             # Use a single session to persist HTTP connections, avoiding
