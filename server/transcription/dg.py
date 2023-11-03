@@ -49,13 +49,10 @@ class DeepgramTranscriber(Transcriber):
         print("transcribing from URL:", recording_url)
         deepgram = Deepgram(api_key)
         source = {'url': recording_url}
-        try:
-            res = deepgram.transcription.sync_prerecorded(
-                source, self.get_transcription_options()
-            )
-            return self.get_transcript(res)
-        except Exception as e:
-            raise Exception("failed to transcribe from URL") from e
+        res = deepgram.transcription.sync_prerecorded(
+            source, self.get_transcription_options()
+        )
+        return self.get_transcript(res)
 
     def transcribe_from_file(self, api_key: str, audio_path: str) -> str:
         """Transcribes recording from audio file."""
@@ -63,15 +60,12 @@ class DeepgramTranscriber(Transcriber):
             raise Exception("Audio file could not be found", audio_path)
         deepgram = Deepgram(api_key)
 
-        try:
-            with open(audio_path, 'rb') as audio_file:
-                source = {'buffer': audio_file, 'mimetype': "audio/wav"}
-                res = deepgram.transcription.sync_prerecorded(
-                    source, self.get_transcription_options()
-                )
-            return self.get_transcript(res)
-        except Exception as e:
-            raise Exception("failed to transcribe from local audio path") from e
+        with open(audio_path, 'rb') as audio_file:
+            source = {'buffer': audio_file, 'mimetype': "audio/wav"}
+            res = deepgram.transcription.sync_prerecorded(
+                source, self.get_transcription_options()
+            )
+        return self.get_transcript(res)
 
     def get_transcript(self, result) -> str:
         """Retrieves transcript string from Deepgram result"""

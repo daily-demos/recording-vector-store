@@ -283,6 +283,9 @@ class Store:
                     f"Recording {recording_url} was too large; if you want to index it, "
                     f"download the recording and "
                     f"upload in multiple parts")
+            else:
+                print(f"Failed to transcribe video, moving on to the next {recording_url}: {s}")
+            return
 
         self.save_and_index_transcript(transcript_file_path, transcript)
 
