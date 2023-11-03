@@ -29,7 +29,7 @@ from transcription.transcriber import Transcriber
 
 
 class State(str, Enum):
-    """Class representing project processing status."""
+    """Class representing index status."""
     UNINITIALIZED = "uninitialized"
     CREATING = "creating"
     UPDATING = "updating"
@@ -46,7 +46,7 @@ class Source(Enum):
 
 @dataclasses.dataclass
 class Status:
-    """Class representing current index status"""
+    """Class representing current index status and a descriptive message"""
     state: str
     message: str
 
