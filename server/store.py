@@ -5,6 +5,7 @@ import dataclasses
 import os.path
 import pathlib
 import sys
+import traceback
 
 from enum import Enum
 
@@ -133,11 +134,13 @@ class Store:
                 await self.index_daily_recordings()
             elif source == Source.UPLOADS:
                 await self.generate_upload_transcripts()
+            self.index.storage_context.persist(get_index_dir_path())
             self.update_status(State.READY, "Index ready to query")
         except Exception as e:
             print(
                 f"failed to update index from source {source} - {e}",
                 file=sys.stderr)
+            traceback.print_exc()
             self.update_status(State.ERROR, "Failed to update existing index")
 
     async def generate_index(self, source: Source):
@@ -245,6 +248,7 @@ class Store:
     def transcribe_and_index_recording(self, recording: Recording):
         """Transcribes and indexes a Daily cloud recording"""
 
+        print("Transcribing and indexing recording:", recording)
         # A safety rail to make sure we only include relevant room name
         # In reality, we specify the room name when querying Daily's REST API
         if self.daily_room_name and self.daily_room_name != recording.room_name:
@@ -270,10 +274,12 @@ class Store:
         if self.transcriber.requires_local_audio():
             audio_path = get_remote_recording_audio_path(file_name)
             if not os.path.exists(audio_path):
+                print("Producing local audio for recording:", recording)
                 audio_path = produce_local_audio_from_url(
                     recording_url, file_name)
 
         try:
+            print(f"Transcribing video with {self.transcriber}", recording_url, audio_path)
             transcript = self.transcriber.transcribe(recording_url, audio_path)
         except Exception as e:
             s = str(e)

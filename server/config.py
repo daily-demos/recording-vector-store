@@ -13,6 +13,7 @@ def ensure_dirs():
     ensure_dir(TRANSCRIPTS_DIR_ENV)
     ensure_dir(INDEX_DIR_ENV)
     ensure_dir(UPLOAD_DIR_ENV)
+    ensure_dir(RECORDINGS_DIR_ENV)
 
 
 def ensure_dir(env_name: str):

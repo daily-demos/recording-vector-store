@@ -67,15 +67,32 @@ h2 {
     font-weight: bold;
 }
 
+#pendingIndexing {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#uploadControls {
+    border: var(--light-muted) 1px solid;
+    padding: 8px;
+    border-radius: 4px;
+    background-color: var(--light-slightly-muted);
+}
+
 #query {
     display: flex;
-    flex: 2 1 auto;
+    flex: 1 1 auto;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
     border: var(--dark-muted) 1px solid;
     margin-left: 8px;
     border-radius: 8px;
     padding: 12px;
+}
+
+#response {
+    margin: 12px 0px;
 }
 
 input[type="text"],textarea {
@@ -99,6 +116,12 @@ textarea {
     padding: 12px;
 }
 
+#ask {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 #uploadError {
     color: red;
     font-size: 0.8em;
@@ -108,7 +131,7 @@ textarea {
 .lobby {
     display: flex;
     flex-direction: column;
-    max-width: 50%;
+    width: 70%
 }
 
 .lobby a {

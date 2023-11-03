@@ -42,7 +42,9 @@ def get_uploaded_file_paths() -> List[str]:
 def produce_local_audio_from_url(recording_url: str, video_file_name: str):
     """Downloads a recording from the given URL and extracts audio from it"""
     video_path = download_recording(recording_url, video_file_name)
+    print("Downloaded recording:", video_path)
     audio_path = extract_audio(video_path)
+    print("Extracted audio:", audio_path)
     os.remove(video_path)
     return audio_path
 
@@ -86,7 +88,7 @@ def get_upload_video_path(file_name: str) -> str:
 
 def get_recording_video_path(file_name: str) -> str:
     """Returns video path for a given file name"""
-    video_path = os.path.join(get_upload_dir_path(), f'{file_name}.mp4')
+    video_path = os.path.join(get_recordings_dir_path(), f'{file_name}.mp4')
     return video_path
 
 

@@ -125,7 +125,6 @@ async def query_index():
         res = store.query(query)
         return jsonify({
             "answer": res.response,
-            "metadata": res.metadata,
         }), 200
     except Exception as e:
         return process_error('failed to query index', 500, e)

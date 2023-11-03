@@ -116,7 +116,6 @@ export function enableStoreQuery() {
   if (spinners && spinners[0]) {
     spinners[0].remove();
   }
-  btn.append(createSpinner());
   enableBtn(getQueryButton());
 }
 

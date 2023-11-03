@@ -2,7 +2,6 @@
 from enum import Enum
 
 import whisper
-
 from .transcriber import Transcriber
 
 
@@ -22,14 +21,10 @@ class WhisperTranscriber(Transcriber):
 
     def transcribe(self, recording_url: str = None, audio_path: str = None) -> str:
         """Transcribes given audio file using Whisper"""
-        try:
-            audio = whisper.load_audio(audio_path)
-            model = whisper.load_model(Models.BASE.value, device="cpu")
-            transcription = whisper.transcribe(
-                model,
-                audio
-            )
-        except Exception as e:
-            raise Exception("failed to transcribe with Whisper") from e
-
+        audio = whisper.load_audio(audio_path)
+        model = whisper.load_model(Models.BASE.value, device="cpu")
+        transcription = whisper.transcribe(
+            model,
+            audio
+        )
         return transcription["text"]

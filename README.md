@@ -1,7 +1,7 @@
 
 ## Vector store and query engine for video recordings
 
-This demo helps you build a vector database using your recordings.
+This demo helps you build a vector database using your recordings using LlamaIndex and Chroma.
 
 ## Running the demo locally
 
@@ -11,8 +11,9 @@ This demo was tested with Python version 3.11.6. We recommend running this in a 
 
 1. Clone this repository.
 1. Copy the `.env.sample` file into `.env`. DO NOT submit your `.env` file to version control.
-1. If you wish to use Deepgram instead of Whisper, paste your Deepgram API key into the `DEEPGRAM_API_KEY` environment variable in `.env`
-1. If you wish to automatically retrieve Daily recordings for your domain instead of uploading an MP4 manually, paste your Daily API key into the `DAILY_API_KEY` environment variable in `.env`.
+1. Specify your `OPENAI_API_KEY` in the `.env` file. This is required.
+1. Optional: If you wish to use Deepgram instead of Whisper, paste your Deepgram API key into the `DEEPGRAM_API_KEY` environment variable in `.env`
+1. Optional: If you wish to automatically retrieve Daily recordings for your domain instead of uploading an MP4 manually, paste your Daily API key into the `DAILY_API_KEY` environment variable in `.env`.
 
 ### Create and activate a virtual environment
 
@@ -35,7 +36,10 @@ Now, open the localhost address shown in your terminal after the last step above
 
 The demo consists of a small JavaScript client and a Python server.
 
-TODO
+The user can create a new vector database or update one that already exists from Daily cloud recordings or manually-uploaded MP4 files.
+
+The user can then query their database. After initial update, queries and updates can run at the same time.
+
 
 ## Transcribers 
 
