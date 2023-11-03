@@ -53,6 +53,6 @@ The user can then query their database. After initial update, queries and update
 The demo implements two transcription models to choose from:
 
 1. Whisper. This is an implementation that does not depend on any third-party APIs. The whisper model of choice is downloaded to the machine running the server component.
-2. Deepgram. If a Deepgram API key is specified in your local `.env` file, the server will use Deepgram's Nova-tier model to detect filler words.
+2. Deepgram. If a Deepgram API key is specified in your local `.env` file, the server will use Deepgram's Nova-tier model.
 
 More transcribers can be added by following the same interface as the above. Just place your implementation into `server/transcription/` and add your new transcriber to the `Transcribers` enum in `server/store.py`

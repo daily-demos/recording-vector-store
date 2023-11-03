@@ -1,4 +1,4 @@
-"""This module implements Deepgram transcription and filler word removal split point detection
+"""This module implements Deepgram transcription
 """
 import os
 

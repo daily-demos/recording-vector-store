@@ -67,8 +67,8 @@ function uploadFiles(files) {
     const formData = new FormData();
     formData.append('file', file);
 
-    // Upload the selected file to the server. This will begin processing the file
-    // to remove filler words.
+    // Upload the selected file to the server. This will not start indexing,
+    // only prepare the files.
     fetch(`${apiURL}/upload`, { method: 'POST', body: formData })
       .then((res) => {
         if (res.ok === false) {
