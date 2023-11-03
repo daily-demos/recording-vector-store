@@ -16,9 +16,11 @@
                     class="daily-logo"
                     alt="Daily logo reads Daily"
             />
-            <strong>
-                <p class="header-title">Vector store and query engine for video recordings</p>
-            </strong>
+                <p class="header-title">
+                    <strong>
+                        Vector store and query engine for video recordings
+                    </strong>
+                </p>
         </div>
         <div class="right-header">
             <a
@@ -85,6 +87,7 @@
                         <p>Pick files of up to 50MB each to index.</p>
                         <input type="file" id="videoFiles" class="light-btn" multiple required>
                         <button type="submit" id="upload" class="teal-btn">Upload</button>
+                        <div id="uploadError"></div>
                     </form>
                     <div id="pendingIndexing">
                         <h4>Uploads pending indexing</h4>

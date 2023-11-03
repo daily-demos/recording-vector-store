@@ -5,6 +5,7 @@ import os
 INDEX_DIR_ENV = 'INDEX_DIR'
 TRANSCRIPTS_DIR_ENV = 'TRANSCRIPTS_DIR'
 UPLOAD_DIR_ENV = 'UPLOAD_DIR'
+RECORDINGS_DIR_ENV = 'RECORDINGS_DIR'
 
 
 def ensure_dirs():
@@ -39,3 +40,8 @@ def get_index_dir_path() -> str:
 def get_upload_dir_path() -> str:
     """Returns upload directory path."""
     return os.path.abspath(os.getenv(UPLOAD_DIR_ENV))
+
+
+def get_recordings_dir_path() -> str:
+    """Returns recording directory path."""
+    return os.path.abspath(os.getenv(RECORDINGS_DIR_ENV))

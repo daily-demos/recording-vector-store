@@ -1,10 +1,13 @@
 const disabledClassName = "disabled";
 
+/**
+ * Configures the handler for the Daily recording indexing form.
+ * @param onsubmit
+ */
 export function setupDailyControls(onsubmit) {
   const form = document.getElementById("initFromRecordings");
   if (!form.onsubmit) {
     form.onsubmit = ((ev) => {
-      console.log("SUBMITsTED")
       ev.preventDefault();
       const roomName = document.getElementById("roomName");
       const maxRecordings = document.getElementById("maxRecordings")
@@ -14,37 +17,10 @@ export function setupDailyControls(onsubmit) {
   }
 }
 
-export function enableStoreControls() {
-  const pendingUploads = getUploadsEle();
-  const listItems = pendingUploads.getElementsByTagName("li")
-  if (listItems && listItems.length > 0) {
-    enableBtn(getIndexUploadsButton());
-  }
-
-  const idxRecordingsForm = getIndexRecordingsForm()
-  if (!idxRecordingsForm.onsubmit) return;
-  enableBtn(getIndexRecordingsButton());
-}
-
-export function disableStoreControls() {
-    disableIndexUploads()
-    disableBtn(getIndexRecordingsButton())
-}
-
-function disableBtn(btn) {
-  btn.disabled = true;
-  btn.classList.add(disabledClassName)
-}
-
-function enableBtn(btn) {
-  btn.disabled = false;
-  btn.classList.remove(disabledClassName)
-}
-
-export function disableIndexUploads() {
-    disableBtn(getIndexUploadsButton())
-}
-
+/**
+ * Configures the click handler for the upload-indexing button
+ * @param onclick
+ */
 export function setupIndexUploads(onclick) {
   const btn = getIndexUploadsButton()
   // Only set onclick handler once
@@ -57,6 +33,10 @@ export function setupIndexUploads(onclick) {
   }
 }
 
+/**
+ * Sets up the submission handler for the querying form
+ * @param onsubmit
+ */
 export function setupStoreQuery(onsubmit) {
      const form = document.getElementById("queryForm");
      form.onsubmit = (ev) => {
@@ -66,17 +46,140 @@ export function setupStoreQuery(onsubmit) {
      }
 }
 
+/**
+ * Set up video file upload form.
+ * @param onsubmit
+ */
+export function setupUploadForm(onsubmit) {
+  const form = document.getElementById('uploadForm');
+  form.onsubmit = (ev) => {
+    ev.preventDefault();
+
+    const files = document.getElementById('videoFiles').files;
+    onsubmit(files)
+  };
+}
+
+export function updateUploadError(errMsg) {
+  const ele = document.getElementById("uploadError");
+  ele.innerText = errMsg;
+}
+
+/**
+ * Enables store-related controls (i.e., triggering indexing)
+ */
+export function enableStoreControls() {
+  const pendingUploads = getUploadsEle();
+  // Only enable the upload-indexing button if there are uploaded files to index.
+  const listItems = pendingUploads.getElementsByTagName("li")
+  if (listItems && listItems.length > 0) {
+    enableIndexUploads();
+  }
+
+  // Only enable the Daily-recording-indexing button if it's been configured.
+  // If no submission handler exists, the server doesn't have Daily capability enabled.
+  const idxRecordingsForm = getIndexRecordingsForm()
+  if (!idxRecordingsForm.onsubmit) return;
+  enableBtn(getIndexRecordingsButton());
+}
+
+/**
+ * Disables store-related controls (i.e., triggering indexing)
+ */
+export function disableStoreControls() {
+    disableIndexUploads()
+    disableBtn(getIndexRecordingsButton())
+}
+
+/**
+ * Disable upload-indexing button
+ * (in its own function as it also needs to be called externally)
+ */
+export function disableIndexUploads() {
+    disableBtn(getIndexUploadsButton())
+}
+
+/**
+ * Enable upload-indexing button.
+ * (in its own function as it also needs to be called externally)
+ */
+export function enableIndexUploads() {
+  enableBtn(getIndexUploadsButton());
+}
+
+/**
+ * Enables query button
+ */
 export function enableStoreQuery() {
+  const btn = getQueryButton();
+  const spinners = btn.getElementsByClassName("spinner");
+  if (spinners && spinners[0]) {
+    spinners[0].remove();
+  }
+  btn.append(createSpinner())
   enableBtn(getQueryButton())
 }
 
-export function updateStatus(state, msg) {
+export function disableStoreQuery(withSpinner) {
+  const btn = getQueryButton();
+  if (withSpinner) {
+      btn.append(createSpinner())
+  }
+  disableBtn(getQueryButton());
+}
+
+/**
+ * Update the response DOM element
+ * @param response
+ */
+export function updateResponse(response) {
+  const resEle = document.getElementById("response")
+  resEle.innerText = response
+}
+
+/**
+ * Disable given button
+ * @param btn
+ */
+function disableBtn(btn) {
+  btn.disabled = true;
+  btn.classList.add(disabledClassName)
+}
+
+/**
+ * Enable given button
+ * @param btn
+ */
+function enableBtn(btn) {
+  btn.disabled = false;
+  btn.classList.remove(disabledClassName)
+}
+
+/**
+ * Updates store status DOM element
+ * @param state
+ * @param msg
+ * @param isSpinning
+ */
+export function updateStatus(state, msg, isSpinning) {
   const statusEle = document.getElementById("status");
   const spanEles = statusEle.getElementsByTagName("span")
-  spanEles[0].innerText = state
+
+  const statusName = spanEles[0]
+  if (!statusName.innerText.includes(state)) {
+    statusName.innerText = "";
+    if (isSpinning) {
+    statusName.append(createSpinner())
+  }
+  statusName.append(state)
+  }
   spanEles[1].innerText = msg
 }
 
+/**
+ * Updates the list of manually-uploaded files pending indexing
+ * @param uploads
+ */
 export function updateUploads(uploads) {
   const uploadsEle= getUploadsEle()
   if (uploads.length === 0) {
@@ -98,17 +201,6 @@ export function updateUploads(uploads) {
 
 function getUploadsEle() {
   return document.getElementById("uploads");
-}
-
-export function setupUploadForm(onsubmit) {
-  const form = document.getElementById('uploadForm');
-  form.onsubmit = (ev) => {
-    ev.preventDefault();
-
-
-    const files = document.getElementById('videoFiles').files;
-    onsubmit(files)
-  };
 }
 
 function getIndexUploadsButton() {

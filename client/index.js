@@ -4,7 +4,13 @@ import {
     setupUploadForm,
     updateStatus,
     updateUploads,
-    enableStoreControls, setupIndexUploads, disableIndexUploads, disableStoreControls, enableStoreQuery,
+    enableStoreControls,
+    setupIndexUploads,
+    disableIndexUploads,
+    disableStoreControls,
+    enableStoreQuery,
+    updateResponse,
+    enableIndexUploads, updateUploadError, disableStoreQuery,
 } from './dom.js';
 
 const apiURL = 'http://127.0.0.1:5000';
@@ -13,19 +19,50 @@ window.addEventListener('DOMContentLoaded', () => {
     fetchCapabilities().then((capabilities) => {
         console.log("capabilities:", capabilities);
         if (capabilities["daily"] === true) {
-            setupDailyControls(indexFromDailyRecordings)
+            setupDailyControls(indexDailyRecordings)
         }
     })
     setupUploadForm(uploadFiles);
-    setupIndexUploads(indexFromUploads);
+    setupIndexUploads(indexUploads);
     setupStoreQuery(runQuery)
     pollVectorStoreStatus(1);
     pollUploads(1)
 });
 
+/**
+ * Retrieve server capabilities
+ * In this case, the specific value we care about is whether a Daily API key is configured
+ * @returns {Promise<any>}
+ */
+function fetchCapabilities() {
+    return fetch(`${apiURL}/status/capabilities`, { method: 'GET' })
+        .then((res) => {
+          if (res.ok === false) {
+            throw Error(`Failed to fetch server capabilities: ${res.status}`);
+          }
+          return res.json();
+        })
+        .catch((e) => {
+          console.error('Failed to fetch app capabilities:', e);
+        });
+}
+
+/**
+ * Upload files to the server for future indexing
+ * @param files
+ */
 function uploadFiles(files) {
+    // Clear upload error for fresh upload.
+    updateUploadError("");
+    const errors = [];
+
     for (let i = 0; i < files.length; i++) {
-      const file = files[i]
+      const file = files[i];
+      // Size sanity check; otherwise server will reject it anyway.
+      if (file.size > 1000000 * 60) {
+        errors.push(`File ${file.name} over 60MB size limit. Not uploading.`);
+        continue;
+      }
       const formData = new FormData();
       formData.append('file', file);
 
@@ -41,10 +78,15 @@ function uploadFiles(files) {
           console.error(`Failed to upload file ${file.name}:`, e);
         });
       }
+    updateUploadError(errors.join(" "))
 }
 
-function indexFromDailyRecordings(roomName, maxRecordings) {
-    // Fetch all recordings from the server
+/**
+ * Index Daily recordings
+ * @param roomName
+ * @param maxRecordings
+ */
+function indexDailyRecordings(roomName, maxRecordings) {
     const body = {
         "source": "daily",
         "room_name": roomName,
@@ -53,14 +95,20 @@ function indexFromDailyRecordings(roomName, maxRecordings) {
     doIndex(body)
 }
 
-function indexFromUploads() {
-    // Fetch all recordings from the server
+/**
+ * Index manually-uploaded files that are already on the server
+ */
+function indexUploads() {
     const body = {
         "source": "uploads",
     }
     doIndex(body)
 }
 
+/**
+ * Instruct the server to commence index creation or update based on given configuration
+ * @param body
+ */
 function doIndex(body) {
         fetch(`${apiURL}/db/index`, { method: 'POST', body: JSON.stringify(body) })
         .then((res) => {
@@ -74,23 +122,13 @@ function doIndex(body) {
         });
 }
 
-function fetchCapabilities() {
-    return fetch(`${apiURL}/status/capabilities`, { method: 'GET' })
-        .then((res) => {
-          if (res.ok === false) {
-            throw Error(`Failed to fetch server capabilities: ${res.status}`);
-          }
-          return res.json();
-        })
-        .then((data) => {
-            return data;
-        })
-        .catch((e) => {
-          console.error('Failed to fetch app capabilities:', e);
-        });
-}
 
+/**
+ * Queries the existing index with the given input.
+ * @param queryInput
+ */
 function runQuery(queryInput) {
+    disableStoreQuery(true);
     console.log("query:", queryInput)
         fetch(`${apiURL}/db/query`, {
             method: 'POST',
@@ -107,14 +145,19 @@ function runQuery(queryInput) {
             }
             return res.json()
         }).then((res) => {
-            console.log("answer:", res)
-            const resEle = document.getElementById("response")
-            resEle.innerText = res.answer
+            // Update the DOM with the retrieved response.
+            const answer = res["answer"]
+            updateResponse(answer);
+            enableStoreQuery();
         }).catch((e) => {
             console.error('Failed to run query:', e);
         });
 }
 
+/**
+ * Poll the status of the vector store
+ * @param timeoutMs
+ */
 function pollVectorStoreStatus(timeoutMs) {
     setTimeout(() => {
         // Fetch status of the given project from the server
@@ -126,26 +169,33 @@ function pollVectorStoreStatus(timeoutMs) {
                 return res.json();
             })
             .then((data) => {
-                console.log("status data:", data)
                 const {state, message} = data;
-                updateStatus(state, message)
 
                 switch (state) {
                     case "uninitialized":
+                        updateStatus(state, message)
                         enableStoreControls();
                         pollVectorStoreStatus(3000);
                         break;
+                    case "updating":
+                        updateStatus(state, message, true);
+                        enableStoreQuery();
+                        pollVectorStoreStatus(3000);
+                        break;
                     case "ready":
+                        updateStatus(state, message)
                         enableStoreQuery();
                         enableStoreControls();
-                        // Poll less frequently
+                        // Poll less frequently if index is ready
                         pollVectorStoreStatus(10000);
                         break;
                     case "failed":
+                        updateStatus(state, message)
                         enableStoreControls();
                         pollVectorStoreStatus(3000);
                         break;
                     default:
+                        updateStatus(state, message, true)
                         disableStoreControls();
                         pollVectorStoreStatus(3000);
                         break;
@@ -154,11 +204,14 @@ function pollVectorStoreStatus(timeoutMs) {
             .catch((err) => {
                 console.error('failed to check project status: ', err);
                 pollVectorStoreStatus(3000);
-
             });
     }, timeoutMs);
 }
 
+/**
+ * Checks which manual uploads are pending indexing on the server.
+ * @param timeoutMs
+ */
 function pollUploads(timeoutMs) {
     setTimeout(() => {
         // Fetch status of the given project from the server
@@ -170,17 +223,20 @@ function pollUploads(timeoutMs) {
                 return res.json();
             })
             .then((data) => {
-                console.log("uploads status data:", data)
                 const files = data["files"]
+                // If there are no uploads to index, disable index button
                 if (files.length === 0) {
                     disableIndexUploads();
+                } else {
+                    enableIndexUploads();
                 }
+
+                // Update the DOM with the new uploaded file information
                 updateUploads(files);
-                pollUploads(5000);
             })
             .catch((err) => {
                 console.error('failed to check upload status: ', err);
-                pollUploads(3000);
             });
+        pollUploads(5000);
     }, timeoutMs);
 }

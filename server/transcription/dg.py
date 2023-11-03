@@ -3,6 +3,7 @@
 import os
 
 from deepgram import Deepgram
+
 from .transcriber import Transcriber
 
 

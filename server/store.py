@@ -19,7 +19,8 @@ from llama_index.vector_stores import ChromaVectorStore
 
 from config import get_transcripts_dir_path, get_index_dir_path
 from daily import fetch_recordings, get_access_link, Recording
-from media import produce_local_audio_from_url, get_audio_path, extract_audio, get_uploaded_file_paths
+from media import produce_local_audio_from_url, get_audio_path, extract_audio, get_uploaded_file_paths, \
+    get_remote_recording_audio_path
 from transcription.dg import DeepgramTranscriber
 from transcription.whspr import WhisperTranscriber
 from transcription.transcriber import Transcriber
@@ -123,7 +124,7 @@ class Store:
                 await self.generate_upload_transcripts()
             self.update_status(State.READY, "Index ready to query")
         except Exception as e:
-            print(f"failed to update index from source {source}", e, file=sys.stderr)
+            print(f"failed to update index from source {source} - {e}", file=sys.stderr)
             self.update_status(State.ERROR, f"Failed to update existing index")
 
     async def generate_index(self, source: Source):
@@ -205,9 +206,9 @@ class Store:
             return
 
         # If audio for this video does not already exist, extract it.
-        audio_path = get_audio_path(file_name)
+        audio_path = get_audio_path(video_path)
         if not os.path.exists(audio_path):
-            audio_path = extract_audio(video_path, file_name)
+            audio_path = extract_audio(video_path)
 
         # Video no longer needed, remove it.
         os.remove(video_path)
@@ -248,11 +249,20 @@ class Store:
         # If the configured transcriber requires a local
         # audio file to be sent, make sure it exists.
         if self.transcriber.requires_local_audio():
-            audio_path = get_audio_path(file_name)
+            audio_path = get_remote_recording_audio_path(file_name)
             if not os.path.exists(audio_path):
                 audio_path = produce_local_audio_from_url(recording_url, file_name)
 
-        transcript = self.transcriber.transcribe(recording_url, audio_path)
+        try:
+            transcript = self.transcriber.transcribe(recording_url, audio_path)
+        except Exception as e:
+            s = str(e)
+            if "413" in s:
+                # The payload was too large - log and skip
+                print(
+                    f"Recording {recording_url} was too large; if yo want to index it, download the recording and "
+                    f"upload in multiple parts")
+
         self.save_and_index_transcript(transcript_file_path, transcript)
 
         # No need to take up disk space once we have the transcript
@@ -267,6 +277,7 @@ class Store:
             f.write(transcript)
             # If the index has been loaded, go ahead and index this transcript
             if self.ready() is True:
+                print("Indexing transcript:", transcript_file_path)
                 doc = Document(text=transcript)
                 self.index.insert(doc)
 
