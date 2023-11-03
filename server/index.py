@@ -87,7 +87,8 @@ async def init_or_update_store():
     raw = await request.get_data()
     data = json.loads(raw or 'null')
     if data is None:
-        return process_error(f"Must provide at least the 'source' property in request body", 400)
+        return process_error(
+            f"Must provide at least the 'source' property in request body", 400)
 
     # Check if user is updating index from Daily recordings or manual uploads
     source = data["source"]
@@ -102,7 +103,8 @@ async def init_or_update_store():
     elif source == "uploads":
         index_source = Source.UPLOADS
     else:
-        return process_error(f"Unrecognized source: {source}. Source must be 'daily' or 'uploads'", 400)
+        return process_error(
+            f"Unrecognized source: {source}. Source must be 'daily' or 'uploads'", 400)
 
     # Start updating the store
     app.add_background_task(store.initialize_or_update, index_source)
@@ -113,7 +115,8 @@ async def init_or_update_store():
 async def query_index():
     """Queries the loaded index"""
     if not store.ready():
-        return process_error("Vector index is not yet ready; try again later", 423)
+        return process_error(
+            "Vector index is not yet ready; try again later", 423)
     data = await request.get_json()
     query = data["query"]
     try:
@@ -138,12 +141,14 @@ async def upload_file():
     try:
         file = files["file"]
     except Exception as e:
-        return process_error("failed to retrieve file from request. Was a file provided?", 400, e)
+        return process_error(
+            "failed to retrieve file from request. Was a file provided?", 400, e)
     app.add_background_task(save_uploaded_file, file)
     return "{}", 200
 
 
-def process_error(msg: str, code=500, error: Exception = None, ) -> tuple[Response, int]:
+def process_error(msg: str, code=500, error: Exception = None,
+                  ) -> tuple[Response, int]:
     """Prints provided error and returns appropriately-formatted response."""
     if error:
         traceback.print_exc()

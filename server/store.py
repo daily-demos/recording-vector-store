@@ -58,11 +58,16 @@ class Store:
     daily_room_name: str = None
     max_videos: int = None
 
-    def __init__(self, daily_room_name: str = None, max_videos: int = None, transcriber: Transcriber = None):
+    def __init__(
+            self,
+            daily_room_name: str = None,
+            max_videos: int = None,
+            transcriber: Transcriber = None):
         self.daily_room_name = daily_room_name
         self.max_videos = max_videos
         if not transcriber:
-            # Default to local Whisper model if Deepgram API key is not specified
+            # Default to local Whisper model if Deepgram API key is not
+            # specified
             transcriber = WhisperTranscriber()
             deepgram_api_key = os.getenv("DEEPGRAM_API_KEY")
             if deepgram_api_key:
@@ -128,7 +133,8 @@ class Store:
             self.update_status(State.READY, "Index ready to query")
         except Exception as e:
             print(
-                f"failed to update index from source {source} - {e}", file=sys.stderr)
+                f"failed to update index from source {source} - {e}",
+                file=sys.stderr)
             self.update_status(State.ERROR, f"Failed to update existing index")
 
     async def generate_index(self, source: Source):
@@ -279,7 +285,10 @@ class Store:
         if audio_path:
             os.remove(audio_path)
 
-    def save_and_index_transcript(self, transcript_file_path: str, transcript: str):
+    def save_and_index_transcript(
+            self,
+            transcript_file_path: str,
+            transcript: str):
         """Save the given transcript and index it if the store is ready"""
 
         # Save transcript to given file path
@@ -307,7 +316,8 @@ class Store:
 
     def update_status(self, state: State = None, message: str = None):
         """Updates the status of the vector store"""
-        # If new state is not specified, keep old state and only update the message
+        # If new state is not specified, keep old state and only update the
+        # message
         if state is not None:
             self.status.state = state
         self.status.message = message
