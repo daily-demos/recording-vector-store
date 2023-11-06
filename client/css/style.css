@@ -160,9 +160,8 @@ form button {
 
 .dark-btn {
     background-color: var(--dark);
-    border-color: var(--dark);
+    border: var(--dark) solid 1px;
     border-radius: 24px;
-    border-width: 1px;
     color: var(--light);
     transition: 0.5s;
     padding: 8px;
