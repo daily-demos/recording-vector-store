@@ -18,10 +18,10 @@ from llama_index.storage.docstore import SimpleDocumentStore
 from llama_index.storage.index_store import SimpleIndexStore
 from llama_index.vector_stores import ChromaVectorStore
 
-from config import get_transcripts_dir_path, get_index_dir_path
+from config import get_transcripts_dir_path, get_index_dir_path, get_transcript_file_path
 from daily import fetch_recordings, get_access_link, Recording
 from media import (produce_local_audio_from_url, get_audio_path,
-                   extract_audio, get_uploaded_file_paths, \
+                   extract_audio, get_uploaded_file_paths,
                    get_remote_recording_audio_path)
 from transcription.dg import DeepgramTranscriber
 from transcription.whspr import WhisperTranscriber
@@ -119,7 +119,7 @@ class Store:
         if not self.ready():
             self.update_status(State.CREATING, "Creating index")
             try:
-                await self.generate_index(source)
+                await self.generate_index(source, True)
             except Exception as e:
                 msg = "Failed to create index"
                 print(f"{msg}: {e}", file=sys.stderr)
@@ -130,10 +130,7 @@ class Store:
         # and update the existing index
         self.update_status(State.UPDATING, "Updating index")
         try:
-            if source == Source.DAILY:
-                await self.index_daily_recordings()
-            elif source == Source.UPLOADS:
-                await self.generate_upload_transcripts()
+            await self.generate_index(source, False)
             self.index.storage_context.persist(get_index_dir_path())
             self.update_status(State.READY, "Index ready to query")
         except Exception as e:
@@ -143,15 +140,16 @@ class Store:
             traceback.print_exc()
             self.update_status(State.ERROR, "Failed to update existing index")
 
-    async def generate_index(self, source: Source):
+    async def generate_index(self, source: Source, create_index: True):
         """Generates a new index from given source"""
         if source == Source.DAILY:
             await self.index_daily_recordings()
         elif source == Source.UPLOADS:
-            await self.generate_upload_transcripts()
-        self.create_index()
+            await self.index_uploads()
+        if create_index:
+            self.create_index()
 
-    async def generate_upload_transcripts(self):
+    async def index_uploads(self):
         """Generates transcripts from uploaded files"""
         tasks = []
 
@@ -215,12 +213,7 @@ class Store:
         """Transcribes and indexes locally-saved video recording."""
         file_name = pathlib.Path(video_path).stem
 
-        # Set up transcript file names and paths
-        transcript_file_name = f"{file_name}.txt"
-        transcripts_dir = get_transcripts_dir_path()
-        transcript_file_path = os.path.join(
-            transcripts_dir, transcript_file_name)
-
+        transcript_file_path = get_transcript_file_path(file_name)
         # Don't re-transcribe if a transcript for this recording already exists
         if os.path.exists(transcript_file_path):
             os.remove(video_path)
@@ -255,12 +248,7 @@ class Store:
             return
 
         file_name = f"{recording.timestamp}_{recording.room_name}_{recording.id}"
-
-        # Set up transcript file names and paths
-        transcript_file_name = f"{file_name}.txt"
-        transcripts_dir = get_transcripts_dir_path()
-        transcript_file_path = os.path.join(
-            transcripts_dir, transcript_file_name)
+        transcript_file_path = get_transcript_file_path(file_name)
 
         # Don't re-transcribe if a transcript for this recording already exists
         if os.path.exists(transcript_file_path):
@@ -279,7 +267,10 @@ class Store:
                     recording_url, file_name)
 
         try:
-            print(f"Transcribing video with {self.transcriber}", recording_url, audio_path)
+            print(
+                f"Transcribing video with {self.transcriber}",
+                recording_url,
+                audio_path)
             transcript = self.transcriber.transcribe(recording_url, audio_path)
         except Exception as e:
             s = str(e)
@@ -290,7 +281,8 @@ class Store:
                     f"download the recording and "
                     f"upload in multiple parts")
             else:
-                print(f"Failed to transcribe video, moving on to the next {recording_url}: {s}")
+                print(
+                    f"Failed to transcribe video, moving on to the next {recording_url}: {s}")
             return
 
         self.save_and_index_transcript(transcript_file_path, transcript)

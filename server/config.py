@@ -33,6 +33,12 @@ def get_transcripts_dir_path() -> str:
     return os.path.abspath(os.getenv(TRANSCRIPTS_DIR_ENV))
 
 
+def get_transcript_file_path(file_name):
+    """Returns the destination file path of the transcript file"""
+    transcript_file_name = f"{file_name}.txt"
+    return os.path.join(get_transcripts_dir_path(), transcript_file_name)
+
+
 def get_index_dir_path() -> str:
     """Returns the index storage directory path."""
     return os.path.abspath(os.getenv(INDEX_DIR_ENV))

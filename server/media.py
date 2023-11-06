@@ -38,7 +38,10 @@ def get_uploaded_file_paths() -> List[str]:
         if old_file_size == new_file_size:
             file_names.append(str(path))
         else:
-            print(f"File {path.name} is still being written", old_file_size, new_file_size)
+            print(
+                f"File {path.name} is still being written",
+                old_file_size,
+                new_file_size)
 
     return file_names
 
