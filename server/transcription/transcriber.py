@@ -10,5 +10,6 @@ class Transcriber(ABC):
         or if it requires a local audio file to be transferred."""
 
     @abstractmethod
-    def transcribe(self, recording_url: str = None, audio_path: str = None) -> str:
+    def transcribe(self, recording_url: str = None,
+                   audio_path: str = None) -> str:
         """Returns a transcription string"""

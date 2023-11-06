@@ -10,6 +10,14 @@ from .transcriber import Transcriber
 class DeepgramTranscriber(Transcriber):
     """Class to transcribe a recording from either a local audio file
     or a remote URL with Deepgram"""
+    api_key = None
+    model_name = None
+
+    def __init__(self, api_key: str, model_name: str):
+        self.api_key = api_key
+        self.model_name = model_name
+        if not self.model_name:
+            self.model_name = "nova"
 
     def requires_local_audio(self) -> bool:
         return False
@@ -17,28 +25,24 @@ class DeepgramTranscriber(Transcriber):
     def get_transcription_options(self):
         """Compiles the Deepgram transfiguration config"""
         return {
-            "model": self.get_model_name(),
+            "model": self.model_name,
             "filler_words": True,
             "language": "en",
         }
 
-    def get_model_name(self):
-        """Returns the Deepgram model name to use, defaulting to nova"""
-        model_name = os.getenv("DEEPGRAM_MODEL_NAME")
-        if not model_name:
-            model_name = "nova"
-        return model_name
-
-    def transcribe(self, recording_url: str = None, audio_path: str = None) -> str:
+    def transcribe(self, recording_url: str = None,
+                   audio_path: str = None) -> str:
         """Transcribes give audio file or recording URL"""
-        deepgram_api_key = os.getenv("DEEPGRAM_API_KEY")
+        deepgram_api_key = self.api_key
         if not deepgram_api_key:
             raise Exception("Deepgram API key is missing")
         if not recording_url and not audio_path:
-            raise Exception("Either recording URL or local audio path must be specified")
+            raise Exception(
+                "Either recording URL or local audio path must be specified")
 
         if recording_url and audio_path:
-            print("Both recording URL and audio path specified. Favoring local audio path.")
+            print(
+                "Both recording URL and audio path specified. Favoring local audio path.")
 
         if audio_path:
             return self.transcribe_from_file(deepgram_api_key, audio_path)

@@ -7,8 +7,6 @@ import os
 import requests
 
 DAILY_API_URL_DEFAULT = 'https://api.daily.co/v1'
-DAILY_API_URL_ENV = "DAILY_API_URL"
-DAILY_API_KEY_ENV = "DAILY_API_KEY"
 
 
 @dataclasses.dataclass
@@ -19,27 +17,14 @@ class Recording:
     timestamp: datetime.datetime
 
 
-def is_daily_supported() -> bool:
-    """Whether or not Daily is supported on this server"""
-    return bool(os.getenv(DAILY_API_KEY_ENV))
-
-
-def get_daily_api_url():
-    """Returns Daily API URL"""
-    env_url = os.getenv(DAILY_API_URL_ENV)
-    if env_url:
-        return env_url
-    return DAILY_API_URL_DEFAULT
-
-
-def fetch_recordings(room_name: str = None, limit: int = None):
+def fetch_recordings(api_key: str, api_url: str = DAILY_API_URL_DEFAULT,
+                     room_name: str = None, limit: int = None):
     """Fetches all Daily recordings is a Daily API key is configured"""
-    daily_api_key = os.getenv("DAILY_API_KEY")
-    if not daily_api_key:
+    if not api_key:
         raise Exception("Daily API key not configured in server environment")
 
-    headers = {'Authorization': f'Bearer {daily_api_key}'}
-    url = f'{get_daily_api_url()}/recordings'
+    headers = {'Authorization': f'Bearer {api_key}'}
+    url = f'{api_url}/recordings'
 
     params = {}
     if room_name is not None:
@@ -65,14 +50,14 @@ def fetch_recordings(room_name: str = None, limit: int = None):
     return finished_recordings
 
 
-def get_access_link(recording_id):
+def get_access_link(api_key: str, recording_id: str,
+                    api_url: str = DAILY_API_URL_DEFAULT) -> str:
     """Fetches access link for provided Daily recording ID"""
-    daily_api_key = os.getenv("DAILY_API_KEY")
-    if not daily_api_key:
+    if not api_key:
         raise Exception("Daily API key not configured in server environment")
 
-    url = f'{get_daily_api_url()}/recordings/{recording_id}/access-link'
-    headers = {'Authorization': f'Bearer {daily_api_key}'}
+    url = f'{api_url}/recordings/{recording_id}/access-link'
+    headers = {'Authorization': f'Bearer {api_key}'}
 
     res = requests.get(url, headers=headers, timeout=5)
     if not res.ok:

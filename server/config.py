@@ -1,11 +1,30 @@
 """Module providing primary input and output configuration paths."""
-
+import dataclasses
 import os
 
 INDEX_DIR_ENV = 'INDEX_DIR'
 TRANSCRIPTS_DIR_ENV = 'TRANSCRIPTS_DIR'
 UPLOAD_DIR_ENV = 'UPLOAD_DIR'
 RECORDINGS_DIR_ENV = 'RECORDINGS_DIR'
+
+
+@dataclasses.dataclass
+class APIConfig:
+    """Class representing third-party API keys and other settings."""
+    daily_api_key: str = None
+    daily_api_url: str = None
+    deepgram_api_key: str = None
+    deepgram_model_name: str = None
+
+
+def get_third_party_config() -> APIConfig:
+    """Returns third-party configuration"""
+    return APIConfig(
+        os.getenv("DAILY_API_KEY"),
+        os.getenv("DAILY_API_URL"),
+        os.getenv("DEEPGRAM_API_KEY"),
+        os.getenv("DEEPGRAM_MODEL_NAME")
+    )
 
 
 def ensure_dirs():

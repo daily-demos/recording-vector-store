@@ -7,10 +7,9 @@ import traceback
 from quart_cors import cors
 from quart import Quart, request, jsonify, Response
 
-from config import ensure_dirs
+from config import ensure_dirs, get_third_party_config
 from media import save_uploaded_file, get_uploaded_file_paths
 from store import Store, Source, State
-from daily import is_daily_supported
 
 app = Quart(__name__)
 
@@ -21,7 +20,8 @@ app.config['MAX_CONTENT_LENGTH'] = 1000000 * 60
 cors(app, allow_origin="*", allow_headers=["content-type"])
 ensure_dirs()
 
-store = Store(max_videos=10)
+api_config = get_third_party_config()
+store = Store(api_config=api_config, max_videos=10)
 
 
 @app.before_serving
@@ -50,7 +50,7 @@ async def shutdown():
 def get_capabilities():
     """Returns server capabilities, such as whether a Daily API key
     has been configured or not."""
-    daily_supported = is_daily_supported()
+    daily_supported = bool(api_config.daily_api_key)
     return jsonify({
         "daily": daily_supported
     }), 200

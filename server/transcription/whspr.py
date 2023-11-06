@@ -19,7 +19,8 @@ class WhisperTranscriber(Transcriber):
     def requires_local_audio(self) -> bool:
         return True
 
-    def transcribe(self, recording_url: str = None, audio_path: str = None) -> str:
+    def transcribe(self, recording_url: str = None,
+                   audio_path: str = None) -> str:
         """Transcribes given audio file using Whisper"""
         audio = whisper.load_audio(audio_path)
         model = whisper.load_model(Models.BASE.value, device="cpu")

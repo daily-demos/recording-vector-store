@@ -19,7 +19,7 @@ from llama_index.storage.docstore import SimpleDocumentStore
 from llama_index.storage.index_store import SimpleIndexStore
 from llama_index.vector_stores import ChromaVectorStore
 
-from config import get_transcripts_dir_path, get_index_dir_path, get_transcript_file_path
+from config import get_transcripts_dir_path, get_index_dir_path, get_transcript_file_path, APIConfig
 from daily import fetch_recordings, get_access_link, Recording
 from media import (produce_local_audio_from_url, get_audio_path,
                    extract_audio, get_uploaded_file_paths,
@@ -55,6 +55,7 @@ class Status:
 class Store:
     """Class that manages all vector store indexing operations and status updates."""
     status = Status(State.UNINITIALIZED.value, "The store is uninitialized")
+    api_config: APIConfig = None
     index: BaseIndex = None
     transcriber: Transcriber = None
     collection_name = "my_first_collection"
@@ -67,18 +68,20 @@ class Store:
 
     def __init__(
             self,
+            api_config: APIConfig = APIConfig(),
             daily_room_name: str = None,
             max_videos: int = None,
             transcriber: Transcriber = None):
+        self.api_config = api_config
         self.daily_room_name = daily_room_name
         self.max_videos = max_videos
         if not transcriber:
             # Default to local Whisper model if Deepgram API key is not
             # specified
             transcriber = WhisperTranscriber()
-            deepgram_api_key = os.getenv("DEEPGRAM_API_KEY")
-            if deepgram_api_key:
-                transcriber = DeepgramTranscriber()
+            if api_config.deepgram_api_key:
+                transcriber = DeepgramTranscriber(
+                    api_config.deepgram_api_key, api_config.deepgram_model_name)
         self.transcriber = transcriber
 
     def query(self, query: str) -> Response:
@@ -195,7 +198,13 @@ class Store:
 
     async def index_daily_recordings(self):
         """Indexes Daily recordings as per provided room name and max recordings configuration"""
-        recordings = fetch_recordings(self.daily_room_name, self.max_videos)
+
+        conf = self.api_config
+        recordings = fetch_recordings(
+            conf.daily_api_key,
+            conf.daily_api_url,
+            self.daily_room_name,
+            self.max_videos)
 
         tasks = []
         loop = asyncio.get_event_loop()
@@ -256,7 +265,9 @@ class Store:
         if os.path.exists(transcript_file_path):
             return
 
-        recording_url = get_access_link(recording.id)
+        conf = self.api_config
+        recording_url = get_access_link(
+            conf.daily_api_key, recording.id, conf.daily_api_url)
         audio_path = None
 
         # If the configured transcriber requires a local
