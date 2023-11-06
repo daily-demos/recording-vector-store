@@ -33,7 +33,11 @@ async def init():
 
 @app.after_serving
 async def shutdown():
-    """Stop all background tasks"""
+    """Stop all background tasks and threads"""
+
+    # Note that any running thread pool workers finish
+    # before shutdown is complete.
+    store.destroy()
     for task in app.background_tasks:
         task.cancel()
 

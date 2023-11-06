@@ -6,6 +6,7 @@ import os.path
 import pathlib
 import sys
 import traceback
+from concurrent.futures import ThreadPoolExecutor
 
 from enum import Enum
 
@@ -61,6 +62,8 @@ class Store:
     # Daily-related properties
     daily_room_name: str = None
     max_videos: int = None
+
+    executors = []
 
     def __init__(
             self,
@@ -154,15 +157,22 @@ class Store:
         tasks = []
 
         # Process five files at a time
-        sem = asyncio.BoundedSemaphore(5)
         uploaded_file_paths = get_uploaded_file_paths()
+
+        tasks = []
+        loop = asyncio.get_event_loop()
+        executor = ThreadPoolExecutor(max_workers=5)
+        self.executors.append(executor)
         for path in uploaded_file_paths:
             if not path.endswith(".mp4") and not path.endswith(".mov"):
                 continue
-            tasks.append(asyncio.create_task(
-                self.index_uploaded_file(sem, path)))
+            task = loop.run_in_executor(
+                executor, self.transcribe_and_index_file, path)
+            tasks.append(task)
+
         # Wait for all processing tasks to finish
         await asyncio.gather(*tasks)
+        self.executors.remove(executor)
 
     def create_index(self):
         """Creates a new index
@@ -187,27 +197,19 @@ class Store:
         """Indexes Daily recordings as per provided room name and max recordings configuration"""
         recordings = fetch_recordings(self.daily_room_name, self.max_videos)
 
-        # Process up to 5 recordings at a time
-        sem = asyncio.BoundedSemaphore(5)
         tasks = []
+        loop = asyncio.get_event_loop()
+        executor = ThreadPoolExecutor(max_workers=5)
+        self.executors.append(executor)
         for recording in recordings:
-            tasks.append(asyncio.create_task(
-                self.index_daily_recording(sem, recording)))
+            task = loop.run_in_executor(
+                executor, self.transcribe_and_index_recording, recording)
+            tasks.append(task)
+
         # Wait for tasks to complete
         await asyncio.gather(*tasks)
 
-    async def index_daily_recording(self, sem: asyncio.locks.BoundedSemaphore,
-                                    recording: Recording):
-        """Indexes given Daily recording"""
-        async with sem:
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(None, self.transcribe_and_index_recording, recording)
-
-    async def index_uploaded_file(self, sem: asyncio.locks.BoundedSemaphore, file_path: str):
-        """Indexes given uploaded file"""
-        async with sem:
-            loop = asyncio.get_event_loop()
-            await loop.run_in_executor(None, self.transcribe_and_index_file, file_path)
+        self.executors.remove(executor)
 
     def transcribe_and_index_file(self, video_path):
         """Transcribes and indexes locally-saved video recording."""
@@ -327,3 +329,8 @@ class Store:
         if state is not None:
             self.status.state = state
         self.status.message = message
+
+    def destroy(self):
+        """Destroy cleans up and shuts down relevant store operations"""
+        for executor in self.executors:
+            executor.shutdown(kill_workers=True, wait=False)
