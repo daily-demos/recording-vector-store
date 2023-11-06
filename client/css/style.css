@@ -230,6 +230,7 @@ form button {
 
 .disabled {
     background-color: var(--dark-muted);
+    cursor: not-allowed;
     color: var(--light-muted);
     border: 1px solid var(--dark-muted);
 }
