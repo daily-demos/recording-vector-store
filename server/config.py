@@ -35,16 +35,20 @@ class Config:
         self._deepgram_model_name = deepgram_model_name
 
         if not index_dir:
-            self._index_dir_path = os.path.abspath(deduce_dir_name("INDEX_DIR"))
+            self._index_dir_path = os.path.abspath(
+                deduce_dir_name("INDEX_DIR"))
 
         if not transcripts_dir:
-            self._transcripts_dir_path = os.path.abspath(deduce_dir_name("TRANSCRIPTS_DIR"))
+            self._transcripts_dir_path = os.path.abspath(
+                deduce_dir_name("TRANSCRIPTS_DIR"))
 
         if not uploads_dir:
-            self._uploads_dir_path = os.path.abspath(deduce_dir_name("UPLOADS_DIR"))
+            self._uploads_dir_path = os.path.abspath(
+                deduce_dir_name("UPLOADS_DIR"))
 
         if not recordings_dir:
-            self._recordings_dir_path = os.path.abspath(deduce_dir_name("RECORDINGS_DIR"))
+            self._recordings_dir_path = os.path.abspath(
+                deduce_dir_name("RECORDINGS_DIR"))
 
     def ensure_dirs(self):
         """Creates required file directories if they do not already exist."""
