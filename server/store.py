@@ -131,32 +131,34 @@ class Store:
                 print(f"{msg}: {e}", file=sys.stderr)
                 self.update_status(State.ERROR, "Failed to create index")
                 return
-
-        # This will fetch any _new_ recordings
-        # and update the existing index
-        self.update_status(State.UPDATING, "Updating index")
-        try:
-            await self.generate_index(source, False)
-            self.index.storage_context.persist(self.config.index_dir_path)
-            self.update_status(State.READY, "Index ready to query")
-        except Exception as e:
-            print(
-                f"failed to update index from source {source} - {e}",
-                file=sys.stderr)
-            traceback.print_exc()
-            self.update_status(State.ERROR, "Failed to update existing index")
+        else:
+            # This will fetch any _new_ recordings
+            # and update the existing index
+            self.update_status(State.UPDATING, "Updating index")
+            try:
+                await self.generate_index(source, False)
+                self.index.storage_context.persist(self.config.index_dir_path)
+            except Exception as e:
+                print(
+                    f"failed to update index from source {source} - {e}",
+                    file=sys.stderr)
+                traceback.print_exc()
+                self.update_status(State.ERROR, "Failed to update existing index")
+                return
+        self.update_status(State.READY, "Index ready to query")
 
     async def generate_index(self, source: Source, create_index: True):
         """Generates a new index from given source"""
         if source == Source.DAILY:
-            await self.index_daily_recordings()
+            await self.process_daily_recordings()
         elif source == Source.UPLOADS:
-            await self.index_uploads()
+            await self.process_uploads()
         if create_index:
             self.create_index()
 
-    async def index_uploads(self):
-        """Generates transcripts from uploaded files"""
+    async def process_uploads(self):
+        """Generates transcripts from uploaded files and indexes them
+        IF an index already exists."""
         # Process five files at a time
         uploaded_file_paths = get_uploaded_file_paths(
             self.config.uploads_dir_path)
@@ -195,8 +197,10 @@ class Store:
         index.storage_context.persist(persist_dir=self.config.index_dir_path)
         self.index = index
 
-    async def index_daily_recordings(self):
-        """Indexes Daily recordings as per provided room name and max recordings configuration"""
+    async def process_daily_recordings(self):
+        """Generates transcripts from Daily recordings as per provided
+        room name and max recordings configuration. Indexes them
+        if an index already exists."""
 
         c = self.config
         recordings = fetch_recordings(
