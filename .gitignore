@@ -1,0 +1,10 @@
+venv
+.env
+.idea
+/.git/
+/INDEX_DIR/
+/UPLOAD_DIR/
+/TRANSCRIPTS_DIR/
+/RECORDINGS_DIR/
+/AUDIO_DIR/
+/node_modules/

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vector store and query engine for video recordings</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="./css/style.css" rel="stylesheet" type="text/css" />
+    <link href="./css/header.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<header>
+    <div class="header-container">
+        <div class="left-header">
+            <img
+                    src="./assets/daily.svg"
+                    class="daily-logo"
+                    alt="Daily logo reads Daily"
+            />
+                <p class="header-title">
+                    <strong>
+                        Vector store and query engine for video recordings
+                    </strong>
+                </p>
+        </div>
+        <div class="right-header">
+            <a
+                    href="https://docs.daily.co/reference"
+                    target="_blank"
+                    class="link"
+            >
+                <button class="button docs-button white-button">
+                    API docs
+                    <img
+                            class="arrow-icon"
+                            src="./assets/new-tab-icon.png"
+                            alt="Arrow icon points up and to the right"
+                            aria-hidden="true"
+                    />
+                </button>
+            </a>
+            <span class="divider"></span>
+            <a
+                    href="https://github.com/daily-demos/recording-vector-store"
+                    target="_blank"
+            >
+                <img
+                        class="octocat"
+                        src="./assets/github.png"
+                        alt="GitHub logo Octocat"
+                />
+            </a>
+        </div>
+    </div>
+</header>
+<noscript>
+    This application requires JavaScript to run. Please enable JavaScript in
+    your browser.
+</noscript>
+<div id="container">
+    <div id="lobby" class="lobby">
+        <h1>Vector store and query engine for video recordings</h1>
+        <h2>Build and query a vector store with your own video recordings.</h2>
+        <p>This demo uses <a href="https://www.llamaindex.ai/">LlamaIndex</a>
+            and <a href="https://www.trychroma.com/">Chroma</a> to create
+            a vector store using your Daily cloud recordings, which you can
+            then query in a conversational format.</p>
+
+        <div id="controls">
+            <div id="vectorStore">
+                <div id="status">
+                    <span id="state"></span> - <span id="msg"></span>
+                </div>
+                <div id="dailyControls">
+                    <p>Initialize or update vector store from Daily cloud recordings. Tip: start with 5-10 recordings
+                    to populate the initial store and enable early querying. You can add more later!</p>
+                    <form id="initFromRecordings">
+                        <label for="maxRecordings" type="number">Max recordings to fetch</label><input type="text" id="maxRecordings" value="10" />
+                        <label for="roomName">Daily room name (optional)</label><input type="text" id="roomName" />
+                        <button type="submit" class="dark-btn" id="indexRecordings" disabled>Update Store</button>
+                    </form>
+                </div>
+                <div id="uploadControls">
+                    <h3>Manual file upload</h3>
+                    <p>Start by selecting one or more MP4 files below. Each file must be up to 60MB in size.</p>
+                    <form id="uploadForm">
+                        <h4>Upload your MP4 files</h4>
+                        <input type="file" id="videoFiles" class="light-btn" multiple required>
+                        <button type="submit" id="upload" class="teal-btn">Upload</button>
+                        <div id="uploadError"></div>
+                    </form>
+                    <div id="pendingIndexing">
+                        <h4>Uploads pending indexing</h4>
+                        <div id="uploads">No uploads pending indexing</div>
+                        <button id="indexUploads" class="teal-btn" disabled>Index Pending Uploads</button>
+                    </div>
+                </div>
+            </div>
+            <div id="query">
+                <h2>Ask me anything!</h2>
+                <div id="response"></div>
+                <form id="queryForm">
+                    <label for="queryInput">Question:</label><textarea id="queryInput" required></textarea>
+                    <button id="ask" type="submit" class="dark-btn disabled" disabled>Ask me anything</button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+</div>
+<script type="module" src="./index.js"></script>
+</body>
+</html>
