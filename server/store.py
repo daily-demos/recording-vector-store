@@ -19,11 +19,11 @@ from llama_index.storage.docstore import SimpleDocumentStore
 from llama_index.storage.index_store import SimpleIndexStore
 from llama_index.vector_stores import ChromaVectorStore
 
-from config import get_transcripts_dir_path, get_index_dir_path, get_transcript_file_path, APIConfig
+from config import Config
 from daily import fetch_recordings, get_access_link, Recording
 from media import (produce_local_audio_from_url, get_audio_path,
-                   extract_audio, get_uploaded_file_paths,
-                   get_remote_recording_audio_path)
+                   extract_audio, get_uploaded_file_paths
+                   )
 from transcription.dg import DeepgramTranscriber
 from transcription.whspr import WhisperTranscriber
 from transcription.transcriber import Transcriber
@@ -55,7 +55,7 @@ class Status:
 class Store:
     """Class that manages all vector store indexing operations and status updates."""
     status = Status(State.UNINITIALIZED.value, "The store is uninitialized")
-    api_config: APIConfig = None
+    config: Config = None
     index: BaseIndex = None
     transcriber: Transcriber = None
     collection_name = "my_first_collection"
@@ -68,20 +68,20 @@ class Store:
 
     def __init__(
             self,
-            api_config: APIConfig = APIConfig(),
+            config: Config = Config(),
             daily_room_name: str = None,
             max_videos: int = None,
             transcriber: Transcriber = None):
-        self.api_config = api_config
+        self.config = config
         self.daily_room_name = daily_room_name
         self.max_videos = max_videos
         if not transcriber:
             # Default to local Whisper model if Deepgram API key is not
             # specified
             transcriber = WhisperTranscriber()
-            if api_config.deepgram_api_key:
+            if config.deepgram_api_key:
                 transcriber = DeepgramTranscriber(
-                    api_config.deepgram_api_key, api_config.deepgram_model_name)
+                    config.deepgram_api_key, config.deepgram_model_name)
         self.transcriber = transcriber
 
     def query(self, query: str) -> Response:
@@ -96,7 +96,7 @@ class Store:
         """Attempts to load existing index"""
         self.update_status(State.LOADING, "Loading index")
         try:
-            save_dir = get_index_dir_path()
+            save_dir = self.config.index_dir_path
             vector_store = self.get_vector_store()
             storage_context = StorageContext.from_defaults(
                 vector_store=vector_store,
@@ -137,7 +137,7 @@ class Store:
         self.update_status(State.UPDATING, "Updating index")
         try:
             await self.generate_index(source, False)
-            self.index.storage_context.persist(get_index_dir_path())
+            self.index.storage_context.persist(self.config.index_dir_path)
             self.update_status(State.READY, "Index ready to query")
         except Exception as e:
             print(
@@ -157,10 +157,8 @@ class Store:
 
     async def index_uploads(self):
         """Generates transcripts from uploaded files"""
-        tasks = []
-
         # Process five files at a time
-        uploaded_file_paths = get_uploaded_file_paths()
+        uploaded_file_paths = get_uploaded_file_paths(self.config.uploads_dir_path)
 
         tasks = []
         loop = asyncio.get_event_loop()
@@ -184,7 +182,7 @@ class Store:
 
         # Get all documents from the present transcripts
         documents = SimpleDirectoryReader(
-            get_transcripts_dir_path()
+            self.config.transcripts_dir_path
         ).load_data()
 
         vector_store = self.get_vector_store()
@@ -193,16 +191,16 @@ class Store:
         index = VectorStoreIndex.from_documents(
             documents, storage_context=storage_context
         )
-        index.storage_context.persist(persist_dir=get_index_dir_path())
+        index.storage_context.persist(persist_dir=self.config.index_dir_path)
         self.index = index
 
     async def index_daily_recordings(self):
         """Indexes Daily recordings as per provided room name and max recordings configuration"""
 
-        conf = self.api_config
+        c = self.config
         recordings = fetch_recordings(
-            conf.daily_api_key,
-            conf.daily_api_url,
+            c.daily_api_key,
+            c.daily_api_url,
             self.daily_room_name,
             self.max_videos)
 
@@ -224,7 +222,7 @@ class Store:
         """Transcribes and indexes locally-saved video recording."""
         file_name = pathlib.Path(video_path).stem
 
-        transcript_file_path = get_transcript_file_path(file_name)
+        transcript_file_path = self.config.get_transcript_file_path(file_name)
         # Don't re-transcribe if a transcript for this recording already exists
         if os.path.exists(transcript_file_path):
             os.remove(video_path)
@@ -259,21 +257,21 @@ class Store:
             return
 
         file_name = f"{recording.timestamp}_{recording.room_name}_{recording.id}"
-        transcript_file_path = get_transcript_file_path(file_name)
+        transcript_file_path = self.config.get_transcript_file_path(file_name)
 
         # Don't re-transcribe if a transcript for this recording already exists
         if os.path.exists(transcript_file_path):
             return
 
-        conf = self.api_config
+        c = self.config
         recording_url = get_access_link(
-            conf.daily_api_key, recording.id, conf.daily_api_url)
+            c.daily_api_key, recording.id, c.daily_api_url)
         audio_path = None
 
         # If the configured transcriber requires a local
         # audio file to be sent, make sure it exists.
         if self.transcriber.requires_local_audio():
-            audio_path = get_remote_recording_audio_path(file_name)
+            audio_path = self.config.get_remote_recording_audio_path(file_name)
             if not os.path.exists(audio_path):
                 print("Producing local audio for recording:", recording)
                 audio_path = produce_local_audio_from_url(
@@ -321,7 +319,8 @@ class Store:
 
     def get_vector_store(self):
         """Returns vector store with desired Chroma client, collection, and embed model"""
-        chroma_client = chromadb.PersistentClient(path=get_index_dir_path())
+        chroma_client = chromadb.PersistentClient(
+            path=self.config.index_dir_path)
         chroma_collection = chroma_client.get_or_create_collection(
             self.collection_name)
         embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-base-en-v1.5")

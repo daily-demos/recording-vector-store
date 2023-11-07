@@ -7,7 +7,7 @@ import traceback
 from quart_cors import cors
 from quart import Quart, request, jsonify, Response
 
-from config import ensure_dirs, get_third_party_config
+from config import Config
 from media import save_uploaded_file, get_uploaded_file_paths
 from store import Store, Source, State
 
@@ -18,10 +18,10 @@ app.config['MAX_CONTENT_LENGTH'] = 1000000 * 60
 
 # Note that this is not a secure CORS configuration for production.
 cors(app, allow_origin="*", allow_headers=["content-type"])
-ensure_dirs()
+config = Config()
+config.ensure_dirs()
 
-api_config = get_third_party_config()
-store = Store(api_config=api_config, max_videos=10)
+store = Store(config=config, max_videos=10)
 
 
 @app.before_serving
@@ -50,7 +50,7 @@ async def shutdown():
 def get_capabilities():
     """Returns server capabilities, such as whether a Daily API key
     has been configured or not."""
-    daily_supported = bool(api_config.daily_api_key)
+    daily_supported = bool(config.daily_api_key)
     return jsonify({
         "daily": daily_supported
     }), 200
@@ -67,7 +67,7 @@ def get_uploaded_files():
     """Returns the file names of all files which are currently
     uploaded and pending indexing"""
     try:
-        file_paths = get_uploaded_file_paths()
+        file_paths = get_uploaded_file_paths(config.uploads_dir_path)
         file_names = []
         # Return only the names, not paths on the server
         for path in file_paths:
@@ -148,7 +148,7 @@ async def upload_file():
     except Exception as e:
         return process_error(
             "failed to retrieve file from request. Was a file provided?", 400, e)
-    app.add_background_task(save_uploaded_file, file)
+    app.add_background_task(save_uploaded_file, file, config.uploads_dir_path)
     return "{}", 200
 
 

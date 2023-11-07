@@ -10,13 +10,13 @@ import requests
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from quart.datastructures import FileStorage
 
-from config import get_upload_dir_path, get_recordings_dir_path
 
-
-async def save_uploaded_file(file: FileStorage):
+async def save_uploaded_file(file: FileStorage, uploads_dir: str):
     """Saves given file to the configured upload directory"""
     file_name = os.path.basename(file.filename)
-    file_path = Path(get_upload_video_path(file_name))
+
+    video_path = os.path.join(uploads_dir, file_name)
+    file_path = Path(video_path)
     try:
         await file.save(file_path)
         if not os.path.exists(file_path):
@@ -25,10 +25,10 @@ async def save_uploaded_file(file: FileStorage):
         raise Exception("Failed to save uploaded file") from e
 
 
-def get_uploaded_file_paths() -> List[str]:
+def get_uploaded_file_paths(uploads_dir_path: str) -> List[str]:
     """Returns paths of all mp4 files in the uploads directory"""
     file_names = []
-    for path in pathlib.Path(get_upload_dir_path()).iterdir():
+    for path in pathlib.Path(uploads_dir_path).iterdir():
         if not path.is_file() or path.suffix != ".mp4":
             continue
 
@@ -46,9 +46,13 @@ def get_uploaded_file_paths() -> List[str]:
     return file_names
 
 
-def produce_local_audio_from_url(recording_url: str, video_file_name: str):
+def produce_local_audio_from_url(
+        recording_url: str, video_file_name: str, recordings_dir_path: str):
     """Downloads a recording from the given URL and extracts audio from it"""
-    video_path = download_recording(recording_url, video_file_name)
+    video_path = download_recording(
+        recording_url,
+        video_file_name,
+        recordings_dir_path)
     print("Downloaded recording:", video_path)
     audio_path = extract_audio(video_path)
     print("Extracted audio:", audio_path)
@@ -56,9 +60,12 @@ def produce_local_audio_from_url(recording_url: str, video_file_name: str):
     return audio_path
 
 
-def download_recording(recording_url: str, video_file_name: str):
+def download_recording(
+        recording_url: str, video_file_name: str, recordings_dir_path: str):
     """Downloads Daily recording"""
-    local_file_path = get_recording_video_path(video_file_name)
+    local_file_path = os.path.join(
+        recordings_dir_path,
+        f'{video_file_name}.mp4')
 
     try:
         with open(local_file_path, 'wb') as f:
@@ -86,26 +93,9 @@ def extract_audio(video_path: str):
     return audio_path
 
 
-def get_upload_video_path(file_name: str) -> str:
-    """Returns video path for a given file name"""
-    video_path = os.path.join(get_upload_dir_path(), file_name)
-    return video_path
-
-
-def get_recording_video_path(file_name: str) -> str:
-    """Returns video path for a given file name"""
-    video_path = os.path.join(get_recordings_dir_path(), f'{file_name}.mp4')
-    return video_path
-
-
 def get_audio_path(video_path: str) -> str:
     """Returns audio path for a given file name"""
     audio_dir = os.path.dirname(video_path)
     file_name = pathlib.Path(video_path).stem
     audio_path = os.path.join(audio_dir, f'{file_name}.wav')
     return audio_path
-
-
-def get_remote_recording_audio_path(file_name: str) -> str:
-    """Returns audio path for remote Daily recording"""
-    return os.path.join(get_recordings_dir_path(), f"{file_name}.wav")
