@@ -69,7 +69,7 @@ export function updateUploadError(errMsg) {
  * Enables store-related controls (i.e., triggering indexing)
  */
 export function enableStoreControls() {
-  const pendingUploads = getUploadsEle();
+  const pendingUploads = getUploadsPendingIndexingEle();
   // Only enable the upload-indexing button if there are uploaded files to index.
   const listItems = pendingUploads.getElementsByTagName('li');
   if (listItems && listItems.length > 0) {
@@ -81,6 +81,21 @@ export function enableStoreControls() {
   const idxRecordingsForm = getIndexRecordingsForm();
   if (!idxRecordingsForm.onsubmit) return;
   enableBtn(getIndexRecordingsButton());
+}
+
+export function enableUploadBtn() {
+  const uploadBtn = getUploadFilesBtn();
+  // Reset inner text to remove spinner
+  // (could also retrieve spinner by class name,
+  // but this seems simpler for our demo purposes)
+  uploadBtn.innerText = 'Upload';
+  enableBtn(uploadBtn);
+}
+
+export function disableUploadBtn() {
+  const uploadBtn = getUploadFilesBtn();
+  disableBtn(uploadBtn);
+  uploadBtn.append(createSpinner());
 }
 
 /**
@@ -179,13 +194,36 @@ export function updateStatus(state, msg, isSpinning) {
  * Updates the list of manually-uploaded files pending indexing
  * @param uploads
  */
-export function updateUploads(uploads) {
-  const uploadsEle = getUploadsEle();
+export function updateUploadsPendingIndexing(uploads) {
+  const uploadsEle = getUploadsPendingIndexingEle();
   if (uploads.length === 0) {
     uploadsEle.innerText = 'No uploads pending indexing';
     return;
   }
-  uploadsEle.innerText = '';
+  updateListOfUploads(uploads, uploadsEle);
+}
+
+/**
+ * Updates the list of manually-uploaded files currently being uploaded
+ * @param uploads
+ */
+export function updateUploadsInProgress(uploads) {
+  const uploadsEle = getUploadsInProgressEle();
+  if (uploads.length === 0) {
+    uploadsEle.innerText = 'No uploads in progress';
+    return;
+  }
+  updateListOfUploads(uploads, uploadsEle, true);
+}
+
+/**
+ * Updates the given element with a list of the given uploads
+ * @param uploads
+ * @param listContainer
+ * @param withSpinner
+ */
+function updateListOfUploads(uploads, listContainer, withSpinner) {
+  listContainer.innerText = '';
   // We could check for existing items and only replace the relevant ones here, but let's
   // just replace the whole list for simplicity of demonstration.
   const ul = document.createElement('ul');
@@ -193,17 +231,28 @@ export function updateUploads(uploads) {
     const upload = uploads[i];
     const li = document.createElement('li');
     li.innerText = upload;
+    if (withSpinner) {
+      li.append(createSpinner());
+    }
     ul.append(li);
   }
-  uploadsEle.append(ul);
+  listContainer.append(ul);
 }
 
-function getUploadsEle() {
-  return document.getElementById('uploads');
+function getUploadsPendingIndexingEle() {
+  return document.getElementById('pendingIndexingUploads');
+}
+
+function getUploadsInProgressEle() {
+  return document.getElementById('inProgressUploads');
 }
 
 function getIndexUploadsButton() {
   return document.getElementById('indexUploads');
+}
+
+function getUploadFilesBtn() {
+  return document.getElementById('upload');
 }
 
 function getIndexRecordingsForm() {

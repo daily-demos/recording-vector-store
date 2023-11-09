@@ -1,5 +1,6 @@
 """Module that handles media file operations, like saving uploads, stripping audio,
 returning existing uploads,etc."""
+import dataclasses
 import os
 import pathlib
 import time
@@ -9,6 +10,13 @@ from typing import List
 import requests
 from moviepy.video.io.VideoFileClip import VideoFileClip
 from quart.datastructures import FileStorage
+
+
+@dataclasses.dataclass
+class Uploads:
+    """Class representing manual uploads completed or in progress"""
+    complete: list[str]
+    in_progress: list[str]
 
 
 async def save_uploaded_file(file: FileStorage, uploads_dir: str):
@@ -25,9 +33,11 @@ async def save_uploaded_file(file: FileStorage, uploads_dir: str):
         raise Exception("Failed to save uploaded file") from e
 
 
-def get_uploaded_file_paths(uploads_dir_path: str) -> List[str]:
-    """Returns paths of all mp4 files in the uploads directory"""
-    file_names = []
+def get_uploaded_file_paths(uploads_dir_path: str) -> Uploads:
+    """Returns paths of all mp4 files in the uploads directory,
+    indicating whether the upload is completed or in progress."""
+    completed = []
+    in_progress = []
     for path in pathlib.Path(uploads_dir_path).iterdir():
         if not path.is_file() or path.suffix != ".mp4":
             continue
@@ -36,14 +46,11 @@ def get_uploaded_file_paths(uploads_dir_path: str) -> List[str]:
         time.sleep(2)
         new_file_size = os.path.getsize(path)
         if old_file_size == new_file_size:
-            file_names.append(str(path))
+            completed.append(str(path))
         else:
-            print(
-                f"File {path.name} is still being written",
-                old_file_size,
-                new_file_size)
+            in_progress.append(str(path))
 
-    return file_names
+    return Uploads(completed, in_progress)
 
 
 def produce_local_audio_from_url(

@@ -157,12 +157,13 @@ class Store:
 
     async def index_uploads(self):
         """Generates transcripts from uploaded files"""
-        # Process five files at a time
-        uploaded_file_paths = get_uploaded_file_paths(
+        uploads = get_uploaded_file_paths(
             self.config.uploads_dir_path)
 
+        uploaded_file_paths = uploads.complete
         tasks = []
         loop = asyncio.get_event_loop()
+        # Process five files at a time
         executor = ThreadPoolExecutor(max_workers=5)
         self.executors.append(executor)
         for path in uploaded_file_paths:
