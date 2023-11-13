@@ -80,16 +80,20 @@ function uploadFiles(files) {
             `upload request failed for file: ${res.status} {${file.name}`,
           );
         }
+      })
+      .catch((e) => {
+        const msg = `Failed to upload file ${file.name}`;
+        console.error(msg, e);
+        errors.append(`${msg} - see console for details`);
+        enableUploadBtn();
+      })
+      .finally(() => {
         // Fetch file uploads in progress immediately for faster UI update.
         fetchUploads();
         enableUploadBtn();
-      })
-      .catch((e) => {
-        console.error(`Failed to upload file ${file.name}:`, e);
-        enableUploadBtn();
+        updateUploadError(errors.join(' '));
       });
   }
-  updateUploadError(errors.join(' '));
 }
 
 /**
