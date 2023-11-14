@@ -138,6 +138,7 @@ class Store:
             # If index creation is required, do so.
             if create_index:
                 self.create_index()
+            self.index.storage_context.persist(self.config.index_dir_path)
             self.update_status(State.READY, "Index ready to query")
         except Exception as e:
             msg = "Failed to create or update index"
@@ -184,7 +185,6 @@ class Store:
         index = VectorStoreIndex.from_documents(
             documents, storage_context=storage_context
         )
-        index.storage_context.persist(persist_dir=self.config.index_dir_path)
         self.index = index
 
     async def process_daily_recordings(self):
