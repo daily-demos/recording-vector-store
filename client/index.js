@@ -3,7 +3,7 @@ import {
   setupStoreQuery,
   setupUploadForm,
   updateStatus,
-  updateUploads,
+  updateUploadsPendingIndexing,
   enableStoreControls,
   setupIndexUploads,
   disableIndexUploads,
@@ -13,6 +13,9 @@ import {
   enableIndexUploads,
   updateUploadError,
   disableStoreQuery,
+  updateUploadsInProgress,
+  disableUploadBtn,
+  enableUploadBtn,
 } from './dom.js';
 
 const apiURL = 'http://127.0.0.1:5000';
@@ -56,6 +59,7 @@ function uploadFiles(files) {
   // Clear upload error for fresh upload.
   updateUploadError('');
   const errors = [];
+  disableUploadBtn();
 
   for (let i = 0; i < files.length; i += 1) {
     const file = files[i];
@@ -78,10 +82,18 @@ function uploadFiles(files) {
         }
       })
       .catch((e) => {
-        console.error(`Failed to upload file ${file.name}:`, e);
+        const msg = `Failed to upload file ${file.name}`;
+        console.error(msg, e);
+        errors.append(`${msg} - see console for details`);
+        enableUploadBtn();
+      })
+      .finally(() => {
+        // Fetch file uploads in progress immediately for faster UI update.
+        fetchUploads();
+        enableUploadBtn();
+        updateUploadError(errors.join(' '));
       });
   }
-  updateUploadError(errors.join(' '));
 }
 
 /**
@@ -218,28 +230,37 @@ function pollVectorStoreStatus(timeoutMs) {
 function pollUploads(timeoutMs) {
   setTimeout(() => {
     // Fetch status of the given project from the server
-    fetch(`${apiURL}/status/uploads`)
-      .then((res) => {
-        if (!res.ok) {
-          throw Error(`upload retrieval request failed: ${res.status}`);
-        }
-        return res.json();
-      })
-      .then((data) => {
-        const { files } = data;
-        // If there are no uploads to index, disable index button
-        if (files.length === 0) {
-          disableIndexUploads();
-        } else {
-          enableIndexUploads();
-        }
-
-        // Update the DOM with the new uploaded file information
-        updateUploads(files);
-      })
-      .catch((err) => {
-        console.error('failed to check upload status: ', err);
-      });
+    fetchUploads();
     pollUploads(5000);
   }, timeoutMs);
+}
+
+/**
+ * Fetches uploads in progress and pending indexing on the server
+ * and updates the DOM accordingly.
+ */
+function fetchUploads() {
+  fetch(`${apiURL}/status/uploads`)
+    .then((res) => {
+      if (!res.ok) {
+        throw Error(`upload retrieval request failed: ${res.status}`);
+      }
+      return res.json();
+    })
+    .then((uploads) => {
+      const { completed } = uploads;
+      // If there are no uploads to index, disable index button
+      if (completed.length === 0) {
+        disableIndexUploads();
+      } else {
+        enableIndexUploads();
+      }
+
+      // Update the DOM with the new uploaded file information
+      updateUploadsPendingIndexing(completed);
+      updateUploadsInProgress(uploads.in_progress);
+    })
+    .catch((err) => {
+      console.error('failed to check upload status: ', err);
+    });
 }

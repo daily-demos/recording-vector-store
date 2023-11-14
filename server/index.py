@@ -67,13 +67,19 @@ def get_uploaded_files():
     """Returns the file names of all files which are currently
     uploaded and pending indexing"""
     try:
-        file_paths = get_uploaded_file_paths(config.uploads_dir_path)
-        file_names = []
+        uploads = get_uploaded_file_paths(config.uploads_dir_path)
+        completed_file_names = []
+        in_progress_file_names = []
         # Return only the names, not paths on the server
-        for path in file_paths:
-            file_names.append(os.path.basename(path))
+        for path in uploads.complete:
+            completed_file_names.append(os.path.basename(path))
+
+        for path in uploads.in_progress:
+            in_progress_file_names.append(os.path.basename(path))
+
         return jsonify({
-            "files": file_names
+            "completed": completed_file_names,
+            "in_progress": in_progress_file_names
         }), 200
     except Exception as e:
         return process_error("Failed to retrieve uploaded file paths", 500, e)

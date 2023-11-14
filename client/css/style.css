@@ -67,7 +67,7 @@ h2 {
     font-weight: bold;
 }
 
-#pendingIndexing {
+#pendingIndexing,#pendingUpload {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -116,7 +116,7 @@ textarea {
     padding: 12px;
 }
 
-#ask {
+#ask, #upload {
     display: flex;
     align-items: center;
     justify-content: center;

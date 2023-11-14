@@ -138,6 +138,7 @@ class Store:
             # If index creation is required, do so.
             if create_index:
                 self.create_index()
+            self.index.storage_context.persist(self.config.index_dir_path)
             self.update_status(State.READY, "Index ready to query")
         except Exception as e:
             msg = "Failed to create or update index"
@@ -148,12 +149,13 @@ class Store:
     async def process_uploads(self):
         """Generates transcripts from uploaded files and indexes them
         IF an index already exists."""
-        # Process five files at a time
-        uploaded_file_paths = get_uploaded_file_paths(
+        uploads = get_uploaded_file_paths(
             self.config.uploads_dir_path)
 
+        uploaded_file_paths = uploads.complete
         tasks = []
         loop = asyncio.get_event_loop()
+        # Process five files at a time
         executor = ThreadPoolExecutor(max_workers=5)
         self.executors.append(executor)
         for path in uploaded_file_paths:
@@ -183,7 +185,6 @@ class Store:
         index = VectorStoreIndex.from_documents(
             documents, storage_context=storage_context
         )
-        index.storage_context.persist(persist_dir=self.config.index_dir_path)
         self.index = index
 
     async def process_daily_recordings(self):
